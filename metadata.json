@@ -1,0 +1,6 @@
+{
+  "name": "Doğruluk mu Cesaret mi?",
+  "description": "Gerçek zamanlı çok oyunculu Doğruluk mu Cesaret mi oyunu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
