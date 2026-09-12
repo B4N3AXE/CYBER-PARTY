@@ -44,9 +44,9 @@ export default function App() {
         <div className="fixed inset-0 cyber-grid-floor pointer-events-none z-0"></div>
         <div className="fixed inset-0 scanlines pointer-events-none z-10 opacity-35"></div>
         {/* Glowing Plasma Orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-600/20 rounded-full blur-[130px] pointer-events-none z-0"></div>
-        <div className="absolute -bottom-20 right-10 w-[420px] h-[420px] bg-cyan-500/15 rounded-full blur-[110px] pointer-events-none z-0"></div>
-        <div className="absolute -top-10 left-10 w-[380px] h-[380px] bg-pink-500/15 rounded-full blur-[100px] pointer-events-none z-0"></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-600/20 rounded-full blur-[130px] pointer-events-none z-0 transform-gpu will-change-transform"></div>
+        <div className="absolute -bottom-20 right-10 w-[420px] h-[420px] bg-cyan-500/15 rounded-full blur-[110px] pointer-events-none z-0 transform-gpu will-change-transform"></div>
+        <div className="absolute -top-10 left-10 w-[380px] h-[380px] bg-pink-500/15 rounded-full blur-[100px] pointer-events-none z-0 transform-gpu will-change-transform"></div>
       </div>
       
       <div className="relative z-10 flex flex-col min-h-screen font-sans">

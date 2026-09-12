@@ -49,16 +49,20 @@
 
   .glass-panel {
     background: rgba(13, 18, 37, 0.72);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(16px);
+    transform: translateZ(0);
+    will-change: transform, backdrop-filter;
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 45px -10px rgba(168, 85, 247, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
   }
   
   .glass-card {
     background: rgba(255, 255, 255, 0.035);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
+    transform: translateZ(0);
+    will-change: transform, backdrop-filter;
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 

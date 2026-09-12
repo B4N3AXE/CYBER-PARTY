@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import { createServer } from 'node:http';
 import { Server, Socket } from 'socket.io';
 import path from 'path';
@@ -6,6 +7,7 @@ import { createServer as createViteServer } from 'vite';
 import { Room, Player, GamePhase, RoomSettings, ChatMessage } from './src/types.js';
 
 const app = express();
+app.use(compression());
 const server = createServer(app);
 const io = new Server(server, {
   maxHttpBufferSize: 1e7 // Allow up to 10MB for image uploads
@@ -455,7 +457,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { maxAge: "1y" }));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
