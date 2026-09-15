@@ -102,7 +102,7 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
         <div className="w-full max-w-[460px]">
           <div className="glass-panel rounded-3xl p-7 sm:p-9 relative overflow-hidden transition-all duration-300">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500 to-transparent"></div>
-            <div className="absolute top-3 right-3 text-[9px] font-mono text-slate-500 tracking-wider">NET_ID // 8092</div>
+            
             
             <div className="flex flex-col items-center text-center mb-7">
               <div className="relative group cursor-pointer mb-3">
@@ -115,7 +115,7 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
                 CYBERPARTY
               </h1>
               <p className="text-sm text-slate-300 mt-2 font-medium tracking-wide">Partiyi başlatmak için giriş yap</p>
-              <p className="text-xs text-purple-300/70 font-mono mt-0.5">// Siber Şişe Çevirmece & Doğruluk Cesaret //</p>
+              
             </div>
 
             <form className="space-y-5" onSubmit={e => e.preventDefault()}>
@@ -245,7 +245,7 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
           </span>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
-          <span>CYBERSPIN © 2026</span>
+          <span>CYBERPARTY © 2026</span>
           <span className="text-slate-600">•</span>
           <span className="hover:text-cyan-400 cursor-pointer transition">Gizlilik</span>
           <span className="text-slate-600">•</span>
