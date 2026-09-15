@@ -26,7 +26,7 @@ export default function Wheel({
   const rotationDegrees = isSpinning ? (360 * 5) + restingRotation : restingRotation;
 
   return (
-    <div className="relative w-full max-w-[480px] aspect-square flex flex-col items-center justify-center mx-auto my-4 pointer-events-none">
+    <div className="relative w-full max-w-[480px] aspect-square flex flex-col items-center justify-center mx-auto mt-16 mb-20 md:mt-24 md:mb-28 pointer-events-none">
       {/* Outer Table Glow & Ring */}
       <div className="absolute inset-4 rounded-full border border-neonPurple/20 bg-gradient-to-b from-white/[0.04] to-transparent shadow-[0_0_80px_rgba(168,85,247,0.15)] pointer-events-none"></div>
       
