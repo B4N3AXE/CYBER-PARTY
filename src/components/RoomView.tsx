@@ -16,7 +16,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-[100dvh] w-full overflow-hidden">
       {/* Top Navigation Bar */}
       <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 py-3.5 transition-all">
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
@@ -82,10 +82,10 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
       </header>
 
       {/* Main Game Grid Layout */}
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start min-h-0 overflow-y-auto xl:overflow-hidden custom-scrollbar" style={{ overflowAnchor: "none" }}>
         
         {/* Left Column: Lobi & Oyuncu Masası */}
-        <section className="xl:col-span-3 flex flex-col gap-5 order-2 xl:order-1 min-w-0">
+        <section className="xl:col-span-3 flex flex-col gap-4 sm:gap-5 order-2 xl:order-1 min-w-0 h-full overflow-y-auto custom-scrollbar">
           <div className="glass-panel rounded-3xl p-5 shadow-2xl relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
         </section>
 
         {/* Center Column: Cyber Table / GameBoard / Lobby Settings */}
-        <section className="xl:col-span-6 flex flex-col items-center justify-center order-1 xl:order-2 min-w-0 h-full min-h-[500px] w-full">
+        <section className="xl:col-span-6 flex flex-col items-center justify-center order-1 xl:order-2 min-w-0 h-full overflow-y-auto custom-scrollbar w-full">
           {room.settings?.gameMode === 'lexis' ? (
             <LexisGame room={room} myPlayer={myPlayer} socket={socket} />
           ) : (
@@ -154,7 +154,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
         </section>
 
         {/* Right Column: Liderlik Tablosu & Chat */}
-        <section className="xl:col-span-3 flex flex-col gap-5 order-3 min-w-0">
+        <section className="xl:col-span-3 flex flex-col gap-4 sm:gap-5 order-3 min-w-0 h-full overflow-y-auto custom-scrollbar">
           <div className="glass-panel rounded-3xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">

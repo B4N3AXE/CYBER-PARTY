@@ -235,7 +235,7 @@ function LexisGuessPhase({ room, myPlayer, socket, evaluateGuess }: any) {
           {['QWERTYUIOPĞÜ', 'ASDFGHJKLŞİ', 'ZXCVBNMÖÇ'].map((row, i) => (
             <div key={i} className="flex justify-center gap-1.5 sm:gap-2 w-full">
               {i === 2 && (
-                <button onClick={() => handleVirtualKey('ENTER')} className="px-3 sm:px-4 bg-white/10 text-white font-black rounded-xl text-sm sm:text-base border-2 border-white/5 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:bg-white/20 active:scale-95 active:translate-y-0 transition-all">ENT</button>
+                <button onClick={() => handleVirtualKey('ENTER')} onPointerDown={(e) => e.preventDefault()} className="px-3 sm:px-4 bg-white/10 text-white font-black rounded-xl text-sm sm:text-base border-2 border-white/5 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:bg-white/20 active:scale-95 active:translate-y-0 transition-all">ENT</button>
               )}
               {row.split('').map(char => {
                 const upperChar = char; // Already uppercase
@@ -249,7 +249,7 @@ function LexisGuessPhase({ room, myPlayer, socket, evaluateGuess }: any) {
                 return (
                   <button 
                     key={char} 
-                    onClick={() => handleVirtualKey(upperChar)}
+                    onClick={(e) => { e.currentTarget.blur(); handleVirtualKey(upperChar); }} onPointerDown={(e) => e.preventDefault()}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border-2 flex items-center justify-center font-black text-lg sm:text-xl hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] active:scale-95 active:translate-y-0 transition-all ${keyStyle}`}
                   >
                     {upperChar}
@@ -257,7 +257,7 @@ function LexisGuessPhase({ room, myPlayer, socket, evaluateGuess }: any) {
                 )
               })}
               {i === 2 && (
-                <button onClick={() => handleVirtualKey('BACKSPACE')} className="px-3 sm:px-4 bg-white/10 text-white font-black rounded-xl text-sm sm:text-base border-2 border-white/5 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:bg-white/20 active:scale-95 active:translate-y-0 transition-all">DEL</button>
+                <button onClick={() => handleVirtualKey('BACKSPACE')} onPointerDown={(e) => e.preventDefault()} className="px-3 sm:px-4 bg-white/10 text-white font-black rounded-xl text-sm sm:text-base border-2 border-white/5 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:bg-white/20 active:scale-95 active:translate-y-0 transition-all">DEL</button>
               )}
             </div>
           ))}

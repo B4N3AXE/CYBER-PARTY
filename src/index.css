@@ -41,6 +41,15 @@
   }
 }
 
+
+html, body, #root {
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overflow-anchor: none;
+}
+
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
