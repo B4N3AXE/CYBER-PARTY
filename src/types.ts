@@ -21,7 +21,11 @@ export type GamePhase =
   | 'dare_proof'
   | 'dare_vote'
   | 'round_end'
-  | 'game_over';
+  | 'game_over'
+  | 'lexis_playing'
+  | 'lexis_write'
+  | 'lexis_guess'
+  | 'lexis_round_end';
 
 export interface ChatMessage {
   id: string;
@@ -36,6 +40,11 @@ export interface RoomSettings {
   rounds: number;
   passJokers: number;
   changeJokers: number;
+  isPrivate?: boolean;
+  maxPlayers?: number;
+  timeLimit?: number;
+  sfx?: boolean;
+  gameMode?: 'truth' | 'lexis';
 }
 
 export interface Room {
@@ -55,4 +64,8 @@ export interface Room {
   answerText?: string | null;
   dareResult?: 'approved' | 'rejected' | 'passed' | null;
   readyForNextRound?: string[];
+  lexisSubmissions?: Record<string, {word: string, hint: string, targetId?: string}>;
+  lexisAssignments?: Record<string, string>; // guesserId -> writerId
+  lexisGuesses?: Record<string, string[]>;
+  lexisCorrectGuesserIds?: string[];
 }

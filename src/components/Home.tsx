@@ -77,7 +77,7 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
             </div>
           </div>
           <div>
-            <span className="font-cyber text-xl md:text-2xl tracking-wider font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-300">CYBERPARTY</span>
+            <span className="font-cyber text-xl md:text-2xl tracking-wider font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-300">CYBERHUB</span>
             <span className="ml-3 text-xs font-mono uppercase px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 tracking-widest">v2.4 ONLINE</span>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
                 </div>
               </div>
               <h1 className="font-cyber text-3xl sm:text-4xl font-black tracking-wider uppercase neon-text-gradient mt-1">
-                CYBERPARTY
+                CYBERHUB
               </h1>
               <p className="text-sm text-slate-300 mt-2 font-medium tracking-wide">Partiyi başlatmak için giriş yap</p>
               
@@ -245,7 +245,11 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
           </span>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
-          <span>CYBERPARTY © 2026</span>
+          <span>
+            <a href="https://www.instagram.com/cagriscn.21/" target="_blank" rel="noopener noreferrer" className="hover:text-neonPurple transition-colors duration-300 flex items-center gap-2 group">
+              <span className="text-neonPurple font-bold tracking-wider drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,1)] transition-all">⚡ Geliştirici: Çağrı</span>
+            </a>
+          </span>
           <span className="text-slate-600">•</span>
           <span className="hover:text-cyan-400 cursor-pointer transition">Gizlilik</span>
           <span className="text-slate-600">•</span>

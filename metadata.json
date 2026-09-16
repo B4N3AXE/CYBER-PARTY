@@ -1,6 +1,8 @@
 {
-  "name": "Doğruluk mu Cesaret mi?",
-  "description": "Gerçek zamanlı çok oyunculu Doğruluk mu Cesaret mi oyunu.",
+  "name": "CyberHub",
+  "description": "Siberpunk temalı, çok oyunculu kelime (CyberLexis) ve şişe çevirmece (Truth&Dare) oyun platformu.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

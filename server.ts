@@ -44,7 +44,7 @@ io.on('connection', (socket: Socket) => {
 
     rooms[roomId] = {
       id: roomId,
-      settings: { rounds: 10, passJokers: 1, changeJokers: 1 },
+      settings: { rounds: 10, passJokers: 1, changeJokers: 1, isPrivate: false, maxPlayers: 8, timeLimit: 60, sfx: true, gameMode: 'truth' },
       players: [player],
       phase: 'lobby',
       currentRound: 0,
@@ -123,9 +123,15 @@ io.on('connection', (socket: Socket) => {
     const player = room.players.find(p => p.id === socket.id);
     if (player?.isHost && room.phase === 'lobby') {
       if (room.players.length < 1) return;
-      if (room.players.some(p => !p.isReady)) return;
+      if (room.players.filter(p => !p.isHost).some(p => !p.isReady)) return;
 
-      room.phase = 'spin_questioner';
+      room.phase = room.settings.gameMode === 'lexis' ? 'lexis_write' : 'spin_questioner';
+      if(room.settings.gameMode === 'lexis') {
+        room.lexisSubmissions = {};
+        room.lexisAssignments = {};
+        room.lexisGuesses = {};
+        room.lexisCorrectGuesserIds = [];
+      }
       room.currentRound = 1;
       emitRoomUpdate(data.roomId);
       
@@ -348,6 +354,109 @@ io.on('connection', (socket: Socket) => {
         room.dareResult = null;
         emitRoomUpdate(data.roomId);
         addSystemMessage(data.roomId, 'Lobiye dönüldü, yeni oyun için bekleniyor.');
+    }
+  });
+
+  
+  
+  socket.on('lexis_submit_word', (data: { roomId: string; word: string; hint: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    if (room.phase === 'lexis_write') {
+      if (!room.lexisSubmissions) room.lexisSubmissions = {};
+      room.lexisSubmissions[socket.id] = { word: data.word.toUpperCase(), hint: data.hint };
+      
+      // Check if all players have submitted
+      if (Object.keys(room.lexisSubmissions).length === room.players.length) {
+        room.phase = 'lexis_guess';
+        room.lexisGuesses = {};
+        room.lexisCorrectGuesserIds = [];
+        room.lexisAssignments = {};
+        
+        // Assign targets (derangement / shifted array)
+        // If there's only 1 player (testing), they guess their own word.
+        if (room.players.length === 1) {
+          room.lexisAssignments[room.players[0].id] = room.players[0].id;
+        } else {
+          // Shuffle array, then assign i -> i+1
+          let shuffled = [...room.players].sort(() => Math.random() - 0.5);
+          for(let i = 0; i < shuffled.length; i++) {
+            let next = (i + 1) % shuffled.length;
+            room.lexisAssignments[shuffled[i].id] = shuffled[next].id;
+          }
+        }
+        
+        addSystemMessage(data.roomId, `Herkes kelimelerini belirledi. Tahmin aşaması başladı!`);
+      }
+      emitRoomUpdate(data.roomId);
+    }
+  });
+
+  socket.on('lexis_submit_guess', (data: { roomId: string; guess: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    if (room.phase === 'lexis_guess') {
+      if (!room.lexisGuesses) room.lexisGuesses = {};
+      if (!room.lexisGuesses[socket.id]) room.lexisGuesses[socket.id] = [];
+      
+      const targetWriterId = room.lexisAssignments?.[socket.id];
+      if (!targetWriterId) return;
+      const targetWord = room.lexisSubmissions?.[targetWriterId]?.word;
+      if (!targetWord) return;
+      
+      const guessUpper = data.guess.toUpperCase();
+      room.lexisGuesses[socket.id].push(guessUpper);
+      
+      const isCorrect = guessUpper === targetWord;
+      const attempts = room.lexisGuesses[socket.id].length;
+      
+      if (isCorrect) {
+        if (!room.lexisCorrectGuesserIds) room.lexisCorrectGuesserIds = [];
+        if (!room.lexisCorrectGuesserIds.includes(socket.id)) {
+          room.lexisCorrectGuesserIds.push(socket.id);
+        
+          // Award points
+          const points = Math.max(10, 60 - (attempts * 10)); // 1=50, 2=40, 3=30, 4=20, 5=10
+          const player = room.players.find(p => p.id === socket.id);
+          if(player) player.score += points;
+          
+          const writer = room.players.find(p => p.id === targetWriterId);
+          if(writer && writer.id !== socket.id) writer.score += 10;
+          
+          addSystemMessage(data.roomId, `${player?.name || 'Bir oyuncu'} kendisine verilen kelimeyi ${attempts}. denemesinde buldu!`);
+        }
+      }
+
+      // Check if all finished
+      const allDone = room.players.every(p => {
+        const pGuesses = room.lexisGuesses?.[p.id] || [];
+        return (room.lexisCorrectGuesserIds && room.lexisCorrectGuesserIds.includes(p.id)) || pGuesses.length >= 5;
+      });
+
+      if (allDone) {
+        room.phase = 'lexis_round_end';
+        addSystemMessage(data.roomId, `Tur bitti!`);
+      }
+      emitRoomUpdate(data.roomId);
+    }
+  });
+
+  socket.on('lexis_next_round', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (player?.isHost && room.phase === 'lexis_round_end') {
+      room.currentRound += 1;
+      if (room.currentRound > room.settings.rounds) {
+        room.phase = 'game_over';
+      } else {
+        room.phase = 'lexis_write';
+        room.lexisSubmissions = {};
+        room.lexisAssignments = {};
+        room.lexisGuesses = {};
+        room.lexisCorrectGuesserIds = [];
+      }
+      emitRoomUpdate(data.roomId);
     }
   });
 

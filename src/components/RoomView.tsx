@@ -1,6 +1,7 @@
 import { Room } from '../types';
 import Lobby from './Lobby';
 import GameBoard from './GameBoard';
+import LexisGame from './LexisGame';
 import ChatPanel from './ChatPanel';
 import socket from '../socket';
 
@@ -9,6 +10,10 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
   const isHost = myPlayer?.isHost;
 
   const activePlayer = room.players.find(p => p.id === room.questionerId || p.id === room.answererId) || room.players[0];
+
+  if (room.phase === 'lobby') {
+    return <Lobby room={room} myPlayer={myPlayer} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -21,9 +26,9 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
-                <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
-                  CYBER<span className="text-neonPink">SPIN</span>
-                </span>
+                <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-purple-300">
+                    CYBER<span className="text-neonPink">HUB</span>
+                  </span>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                   <span>PARTİ ODASI: <strong className="text-neonBlue tracking-wider">#{room.id}</strong></span>
@@ -135,8 +140,8 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
 
         {/* Center Column: Cyber Table / GameBoard / Lobby Settings */}
         <section className="lg:col-span-6 flex flex-col items-center justify-center order-1 lg:order-2 h-full min-h-[500px]">
-          {room.phase === 'lobby' ? (
-            <Lobby room={room} myPlayer={myPlayer} />
+          {room.settings?.gameMode === 'lexis' ? (
+            <LexisGame room={room} myPlayer={myPlayer} socket={socket} />
           ) : (
             <GameBoard room={room} myPlayer={myPlayer} />
           )}
