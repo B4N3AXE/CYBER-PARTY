@@ -18,17 +18,23 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
   return (
     <div className="flex flex-col min-h-screen">
       {/* Top Navigation Bar */}
-      <header className="border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-6 py-3.5 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 py-3.5 transition-all">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-neonPurple via-neonPink to-neonBlue flex items-center justify-center shadow-neon-pink group-hover:scale-105 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-neonPurple via-neonPink to-neonBlue flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] group-hover:scale-105 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse sm:w-7 sm:h-7"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
-                <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-purple-300">
-                    CYBER<span className="text-neonPink">HUB</span>
+                {room.settings?.gameMode === 'lexis' ? (
+                  <span className="font-display font-black text-2xl sm:text-3xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+                    CYBER<span className="text-cyan-400">LEXIS</span>
                   </span>
+                ) : (
+                  <span className="font-display font-black text-2xl sm:text-3xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
+                    CYBER<span className="text-neonPink">SPIN</span>
+                  </span>
+                )}
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                   <span>PARTİ ODASI: <strong className="text-neonBlue tracking-wider">#{room.id}</strong></span>
@@ -66,7 +72,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-darkBg"></span>
               </div>
-              <div className="hidden xl:block text-left">
+              <div className="hidden sm:block text-left">
                 <div className="text-xs font-bold leading-tight">{myPlayerInfo.name}</div>
                 <div className="text-[10px] text-neonBlue">{myPlayer?.score || 0} Puan</div>
               </div>
@@ -76,10 +82,10 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
       </header>
 
       {/* Main Game Grid Layout */}
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         
         {/* Left Column: Lobi & Oyuncu Masası */}
-        <section className="lg:col-span-3 flex flex-col gap-5 order-2 lg:order-1">
+        <section className="xl:col-span-3 flex flex-col gap-5 order-2 xl:order-1 min-w-0">
           <div className="glass-panel rounded-3xl p-5 shadow-2xl relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -139,7 +145,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
         </section>
 
         {/* Center Column: Cyber Table / GameBoard / Lobby Settings */}
-        <section className="lg:col-span-6 flex flex-col items-center justify-center order-1 lg:order-2 h-full min-h-[500px]">
+        <section className="xl:col-span-6 flex flex-col items-center justify-center order-1 xl:order-2 min-w-0 h-full min-h-[500px] w-full">
           {room.settings?.gameMode === 'lexis' ? (
             <LexisGame room={room} myPlayer={myPlayer} socket={socket} />
           ) : (
@@ -148,7 +154,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
         </section>
 
         {/* Right Column: Liderlik Tablosu & Chat */}
-        <section className="lg:col-span-3 flex flex-col gap-5 order-3">
+        <section className="xl:col-span-3 flex flex-col gap-5 order-3 min-w-0">
           <div className="glass-panel rounded-3xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">

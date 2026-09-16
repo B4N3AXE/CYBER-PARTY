@@ -57,7 +57,7 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
               </div>
               <div>
                 <h1 className="font-display font-black text-2xl tracking-tight text-white flex items-center gap-1.5">
-                  CYBER<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">HUB</span>
+                  CYBER<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">PARTY</span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-pink-500/20 border border-pink-400/30 text-pink-300">PARTİ</span>
                 </h1>
                 <p className="text-xs text-slate-400 flex items-center gap-2 font-medium">
@@ -467,7 +467,7 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
       <footer className="w-full px-6 py-4 bg-[#0d1220]/70 backdrop-blur-md border-t border-white/10 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between mt-4">
         <div className="flex items-center justify-center gap-2 mb-2 sm:mb-0 w-full sm:w-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>CyberHub Parti Odası • Canlı Senkronize Bağlantı</span>
+          <span>CyberParty Parti Odası • Canlı Senkronize Bağlantı</span>
         </div>
         <div className="flex items-center justify-center gap-4 text-slate-400 w-full sm:w-auto">
           <span>Oda: #{room.id}</span>
