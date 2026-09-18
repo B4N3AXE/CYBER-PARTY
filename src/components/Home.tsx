@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import socket from '../socket';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface CyberAvatar {
   id: string;
@@ -132,12 +133,14 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
       {/* 1. TOP HEADER NAVIGATION BAR */}
       <header className="sticky top-0 z-50 w-full px-5 sm:px-8 lg:px-12 py-3.5 bg-[#0a0e1c]/85 backdrop-blur-2xl border-b border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-cyan-400 blur-[6px] absolute"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-cyan-300 relative"></div>
-            </div>
+          {/* Brand Logo with New Square "CP" Neon Icon */}
+          <div className="flex items-center gap-3 group">
+            <img 
+              src="/favicon-48x48.png" 
+              alt="CyberParty Logo" 
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl shadow-[0_0_18px_rgba(0,240,255,0.4)] border border-cyan-400/40 object-cover shrink-0 group-hover:scale-105 transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
             <div className="flex items-center gap-2">
               <span className="font-display font-black text-xl sm:text-2xl uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-pink-400 to-purple-400 drop-shadow-[0_0_15px_rgba(0,240,255,0.6)]">
                 CYBERPARTY
@@ -163,7 +166,10 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          {/* PWA Install Button */}
+          <PWAInstallButton />
+
           <button 
             onClick={() => setShowRules(true)}
             className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-pink-300 transition"
@@ -598,7 +604,13 @@ export default function Home({ onJoin }: { onJoin: (roomId: string, name: string
 
       {/* 5. GLOBAL FOOTER */}
       <footer className="relative z-20 w-full px-5 sm:px-8 lg:px-12 py-5 bg-[#0a0e1c]/90 border-t border-white/10 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <img 
+            src="/favicon-32x32.png" 
+            alt="CP Icon" 
+            className="w-5 h-5 rounded-lg border border-cyan-400/40"
+            referrerPolicy="no-referrer"
+          />
           <span className="font-display font-black text-sm text-cyan-300 tracking-wider">
             CYBERPARTY
           </span>

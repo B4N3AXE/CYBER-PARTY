@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%" fx="30%" fy="30%">
+      <stop offset="0%" stop-color="#120c29"/>
+      <stop offset="50%" stop-color="#090618"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+
+    <!-- Neon Glow Filter -->
+    <filter id="neonCyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="neonPinkGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="superBloom" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur1"/>
+      <feGaussianBlur stdDeviation="6" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Border Gradients -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="35%" stop-color="#0088ff"/>
+      <stop offset="65%" stop-color="#a800ff"/>
+      <stop offset="100%" stop-color="#ff2a85"/>
+    </linearGradient>
+
+    <!-- Letter C Metallic Gradients -->
+    <linearGradient id="cMainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cffafe"/>
+      <stop offset="30%" stop-color="#38bdf8"/>
+      <stop offset="70%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+
+    <linearGradient id="cBevelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <!-- Letter P Metallic Gradients -->
+    <linearGradient id="pMainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fce7f3"/>
+      <stop offset="25%" stop-color="#f472b6"/>
+      <stop offset="60%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+
+    <linearGradient id="pBevelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#f43f5e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#881337" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <!-- Clip Path for Squircle -->
+    <clipPath id="squircleClip">
+      <rect x="16" y="16" width="480" height="480" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base Icon Background with Rounded Corners -->
+  <g clip-path="url(#squircleClip)">
+    <rect x="16" y="16" width="480" height="480" fill="url(#bgGrad)"/>
+
+    <!-- Subtle Cyber HUD Elements: Circles & Crosshairs -->
+    <g opacity="0.25">
+      <!-- Concentric Target Circles -->
+      <circle cx="256" cy="256" r="190" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="8 12"/>
+      <circle cx="256" cy="256" r="140" fill="none" stroke="#ec4899" stroke-width="1" stroke-dasharray="4 8"/>
+      <circle cx="256" cy="256" r="80" fill="none" stroke="#38bdf8" stroke-width="1"/>
+
+      <!-- Crosshair Axes -->
+      <line x1="256" y1="40" x2="256" y2="472" stroke="#00f0ff" stroke-width="1" stroke-dasharray="4 16"/>
+      <line x1="40" y1="256" x2="472" y2="256" stroke="#ff2a85" stroke-width="1" stroke-dasharray="4 16"/>
+
+      <!-- Corner Grid Accents -->
+      <circle cx="256" cy="66" r="3" fill="#00f0ff"/>
+      <circle cx="256" cy="446" r="3" fill="#ff2a85"/>
+      <circle cx="66" cy="256" r="3" fill="#00f0ff"/>
+      <circle cx="446" cy="256" r="3" fill="#ff2a85"/>
+    </g>
+
+    <!-- Horizontal Glitch & Flare Lines -->
+    <g opacity="0.6">
+      <rect x="30" y="210" width="120" height="3" fill="#00f0ff" opacity="0.8" filter="url(#neonCyanGlow)"/>
+      <rect x="400" y="180" width="70" height="3.5" fill="#ff2a85" opacity="0.9" filter="url(#neonPinkGlow)"/>
+      <rect x="42" y="340" width="90" height="2" fill="#00f0ff" opacity="0.7"/>
+      <rect x="370" y="320" width="110" height="2.5" fill="#ff2a85" opacity="0.8"/>
+      <rect x="180" y="390" width="140" height="1.5" fill="#38bdf8" opacity="0.5"/>
+      <rect x="70" y="130" width="40" height="2" fill="#c084fc" opacity="0.6"/>
+    </g>
+
+    <!-- Ambient Core Glow behind Monogram -->
+    <circle cx="190" cy="256" r="100" fill="#00f0ff" opacity="0.18" filter="url(#superBloom)"/>
+    <circle cx="320" cy="256" r="100" fill="#ff2a85" opacity="0.2" filter="url(#superBloom)"/>
+
+    <!-- ==================== THE "CP" MONOGRAM ==================== -->
+    <g filter="url(#superBloom)">
+      <!-- LETTER "C" (CYBER CYAN ANGULAR) -->
+      <!-- Outer bevel / 3D rim -->
+      <polygon points="
+        240,160 148,160 88,220 88,292 148,352 240,352 
+        256,316 164,316 128,280 128,232 164,196 256,196
+      " fill="url(#cBevelGrad)"/>
+
+      <!-- Inner faceted surface -->
+      <polygon points="
+        234,166 152,166 98,220 98,292 152,346 234,346 
+        248,318 160,318 132,284 132,228 160,194 248,194
+      " fill="url(#cMainGrad)"/>
+
+      <!-- Sharp Top-Edge Specular Highlight -->
+      <polygon points="
+        234,166 152,166 98,220 114,220 160,174 242,174
+      " fill="#ffffff" opacity="0.85"/>
+
+      <!-- Inner Glowing Core Line -->
+      <polyline points="
+        240,180 156,180 112,224 112,288 156,332 240,332
+      " fill="none" stroke="#e0f2fe" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+
+
+      <!-- LETTER "P" (CYBER PINK LIGHTNING CUT) -->
+      <!-- Outer bevel / 3D rim -->
+      <polygon points="
+        268,160 412,160 452,204 452,272 400,316 324,316 
+        236,412 216,400 284,316 268,316
+      " fill="url(#pBevelGrad)"/>
+
+      <!-- Inner faceted surface -->
+      <polygon points="
+        274,166 406,166 442,206 442,268 396,310 324,310 
+        242,400 226,394 286,310 274,310
+      " fill="url(#pMainGrad)"/>
+
+      <!-- P Counter (Inner Cutout) -->
+      <polygon points="
+        316,204 388,204 410,230 410,248 388,272 316,272
+      " fill="#090618"/>
+
+      <polygon points="
+        318,206 386,206 406,230 406,246 386,270 318,270
+      " fill="url(#bgGrad)"/>
+
+      <!-- P Top Specular Highlight -->
+      <polygon points="
+        274,166 406,166 442,206 426,206 398,174 282,174
+      " fill="#ffffff" opacity="0.85"/>
+
+      <!-- Lightning Stem Highlight -->
+      <polygon points="
+        324,310 242,400 248,394 326,306
+      " fill="#ffffff" opacity="0.9"/>
+
+      <!-- Inner Glowing Core Line for P -->
+      <polyline points="
+        284,180 398,180 430,214 430,260 392,294 316,294 246,380
+      " fill="none" stroke="#fdf2f8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+    </g>
+
+    <!-- Glitch Overlay Slices Across Letters -->
+    <g opacity="0.85">
+      <!-- Cyan Glitch Slice -->
+      <rect x="74" y="244" width="240" height="4" fill="#00f0ff" opacity="0.9" filter="url(#neonCyanGlow)"/>
+      <rect x="94" y="252" width="60" height="2" fill="#ffffff" opacity="0.8"/>
+
+      <!-- Pink Glitch Slice -->
+      <rect x="250" y="276" width="210" height="4" fill="#ff2a85" opacity="0.9" filter="url(#neonPinkGlow)"/>
+      <rect x="360" y="284" width="80" height="2" fill="#ffffff" opacity="0.8"/>
+    </g>
+
+    <!-- Digital Sparks & Cyber Dust -->
+    <g opacity="0.75">
+      <circle cx="110" cy="180" r="3" fill="#00f0ff" filter="url(#neonCyanGlow)"/>
+      <circle cx="430" cy="340" r="3" fill="#ff2a85" filter="url(#neonPinkGlow)"/>
+      <circle cx="270" cy="130" r="2.5" fill="#38bdf8"/>
+      <circle cx="340" cy="380" r="2.5" fill="#f43f5e"/>
+      <circle cx="210" cy="370" r="2" fill="#a855f7"/>
+      <circle cx="160" cy="140" r="2" fill="#00f0ff"/>
+    </g>
+  </g>
+
+  <!-- Glowing Rounded Dual Neon Outer Border -->
+  <!-- Outer Glow Aura -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" 
+        fill="none" stroke="url(#borderGrad)" stroke-width="12" opacity="0.45" filter="url(#superBloom)"/>
+
+  <!-- Crisp Core Neon Border -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" 
+        fill="none" stroke="url(#borderGrad)" stroke-width="7" opacity="0.95"/>
+
+  <!-- Inner Soft Bevel Line -->
+  <rect x="23" y="23" width="466" height="466" rx="105" ry="105" 
+        fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.35"/>
+</svg>

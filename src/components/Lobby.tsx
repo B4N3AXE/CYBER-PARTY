@@ -52,9 +52,12 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
-                <Gamepad2 className="w-6 h-6" />
-              </div>
+              <img 
+                src="/favicon-48x48.png" 
+                alt="CyberParty Logo" 
+                className="w-11 h-11 rounded-2xl border border-cyan-400/40 shadow-[0_0_18px_rgba(0,240,255,0.35)] object-cover shrink-0"
+                referrerPolicy="no-referrer"
+              />
               <div>
                 <h1 className="font-display font-black text-2xl tracking-tight text-white flex items-center gap-1.5">
                   CYBER<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">PARTY</span>
