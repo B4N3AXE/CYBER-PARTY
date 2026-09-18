@@ -129,4 +129,29 @@ html, body, #root {
     box-shadow: 0 0 18px rgba(236, 72, 153, 0.7), inset 0 0 12px rgba(168, 85, 247, 0.4);
     transform: scale(1.12);
   }
+
+  .cyber21-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .cyber21-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .cyber21-grid {
+      display: grid;
+      grid-template-columns: 290px 1fr 370px;
+      width: 100%;
+      max-width: 100%;
+    }
+  }
 }

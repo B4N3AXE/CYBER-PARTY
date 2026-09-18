@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { Server, Socket } from 'socket.io';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { Room, Player, GamePhase, RoomSettings, ChatMessage } from './src/types.js';
+import { Room, Player, GamePhase, RoomSettings, ChatMessage, Card, CardSuit, Cyber21Dealer, Cyber21Log, Player21Status } from './src/types.js';
 
 const app = express();
 app.use(compression());
@@ -16,6 +16,8 @@ const PORT = 3000;
 
 // In-memory state
 const rooms: Record<string, Room> = {};
+const cyber21Decks: Record<string, Card[]> = {};
+const cyber21Timers: Record<string, NodeJS.Timeout> = {};
 
 // Helper: Generate 6-digit room code
 function generateRoomCode() {
@@ -26,7 +28,342 @@ function generateRoomCode() {
   return code;
 }
 
-// Socket handler
+// Cyber-21 Helpers & Engine
+const SUITS: CardSuit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+const CARD_VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+function createCyberDeck(): Card[] {
+  const deck: Card[] = [];
+  // 4 decks in shoe for realistic casino tournament
+  for (let d = 0; d < 4; d++) {
+    for (const suit of SUITS) {
+      for (const val of CARD_VALUES) {
+        let numericValue = parseInt(val, 10);
+        if (['J', 'Q', 'K'].includes(val)) numericValue = 10;
+        else if (val === 'A') numericValue = 11;
+        deck.push({ suit, value: val, numericValue, hidden: false });
+      }
+    }
+  }
+  // Shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function calculateHandValue(cards: Card[]): number {
+  let total = 0;
+  let aceCount = 0;
+  for (const c of cards) {
+    if (c.hidden) continue;
+    total += c.numericValue;
+    if (c.value === 'A') aceCount++;
+  }
+  while (total > 21 && aceCount > 0) {
+    total -= 10;
+    aceCount--;
+  }
+  return total;
+}
+
+function isNaturalBlackjack(cards: Card[]): boolean {
+  if (cards.length !== 2) return false;
+  return calculateHandValue(cards) === 21;
+}
+
+function suitSymbol(suit: CardSuit): string {
+  switch (suit) {
+    case 'hearts': return '♥️';
+    case 'diamonds': return '♦️';
+    case 'clubs': return '♣️';
+    case 'spades': return '♠️';
+  }
+}
+
+function addCyber21Log(roomId: string, text: string, type: 'dealer' | 'player' | 'system' = 'system') {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (!room.cyber21Logs) room.cyber21Logs = [];
+  room.cyber21Logs.push({
+    id: Math.random().toString(36).substring(2, 9),
+    text,
+    timestamp: Date.now(),
+    type
+  });
+  if (room.cyber21Logs.length > 50) room.cyber21Logs.shift();
+}
+
+function startCyber21Round(roomId: string, room: Room) {
+  if (cyber21Timers[roomId]) clearInterval(cyber21Timers[roomId]);
+
+  room.currentRound += 1;
+  if (room.currentRound > room.settings.rounds) {
+    room.phase = 'game_over';
+    room.players.sort((a, b) => (b.chips || 0) - (a.chips || 0));
+    addCyber21Log(roomId, `🏆 TURNUVA TAMAMLANDI! Şampiyon: ${room.players[0]?.name} (${(room.players[0]?.chips || 0).toLocaleString()} Çip)`, 'system');
+    addSystemMessage(roomId, `Turnuva bitti! Şampiyon: ${room.players[0]?.name} (${(room.players[0]?.chips || 0).toLocaleString()} Çip)`);
+    emitRoomUpdate(roomId);
+    return;
+  }
+
+  // Ensure deck has enough cards
+  if (!cyber21Decks[roomId] || cyber21Decks[roomId].length < 40) {
+    cyber21Decks[roomId] = createCyberDeck();
+    addCyber21Log(roomId, 'Desteler karıştırıldı ve Cyber-21 ayakkabısına yerleştirildi.', 'system');
+  }
+
+  // Reset dealer
+  room.cyber21Dealer = {
+    hand: [],
+    handValue: 0,
+    status: 'idle'
+  };
+
+  // Reset players
+  room.players.forEach(p => {
+    // If bankrupt, give tournament bailout chips so they stay in game
+    if ((p.chips || 0) < 100) {
+      p.chips = 1000;
+      addCyber21Log(roomId, `${p.name} iflas ettiği için turnuva teşvik çipi aldı (+1,000 Çip).`, 'system');
+    }
+    p.score = p.chips || 0;
+    p.currentBet = 0;
+    p.hand = [];
+    p.handValue = 0;
+    p.status21 = 'betting';
+    p.roundResult = null;
+    p.payout = 0;
+  });
+
+  room.phase = 'cyber21_betting';
+  room.cyber21TurnPlayerId = null;
+  room.cyber21BetTimeLeft = 15;
+  addCyber21Log(roomId, `=== TUR ${room.currentRound} / ${room.settings.rounds} BAŞLADI ===`, 'system');
+  addCyber21Log(roomId, `Bahisler açıldı! 15 saniye içinde bahislerinizi belirleyin.`, 'system');
+  emitRoomUpdate(roomId);
+
+  cyber21Timers[roomId] = setInterval(() => {
+    if (room.phase !== 'cyber21_betting') {
+      clearInterval(cyber21Timers[roomId]);
+      return;
+    }
+
+    room.cyber21BetTimeLeft = (room.cyber21BetTimeLeft || 0) - 1;
+
+    if (room.cyber21BetTimeLeft <= 0) {
+      clearInterval(cyber21Timers[roomId]);
+      // Auto-bet for any player who didn't bet
+      room.players.forEach(p => {
+        if (!p.currentBet || p.currentBet === 0) {
+          const autoBet = Math.min(500, p.chips || 100);
+          p.currentBet = Math.max(100, autoBet);
+          p.chips = Math.max(0, (p.chips || 0) - p.currentBet);
+          p.score = p.chips;
+          p.status21 = 'waiting';
+          addCyber21Log(roomId, `${p.name} otomatik ${p.currentBet} çip bahis koydu.`, 'player');
+        }
+      });
+      dealCyber21Cards(roomId, room);
+    } else {
+      emitRoomUpdate(roomId);
+    }
+  }, 1000);
+}
+
+function dealCyber21Cards(roomId: string, room: Room) {
+  if (cyber21Timers[roomId]) clearInterval(cyber21Timers[roomId]);
+  room.phase = 'cyber21_dealing';
+  const deck = cyber21Decks[roomId];
+
+  // Deal 2 cards to each player
+  room.players.forEach(p => {
+    const card1 = deck.pop() || { suit: 'spades', value: '10', numericValue: 10 };
+    const card2 = deck.pop() || { suit: 'hearts', value: '10', numericValue: 10 };
+    p.hand = [card1, card2];
+    p.handValue = calculateHandValue(p.hand);
+    if (isNaturalBlackjack(p.hand)) {
+      p.status21 = 'blackjack';
+      addCyber21Log(roomId, `⚡ ${p.name} DOĞAL BLACKJACK (21) YAPTI!`, 'player');
+    } else {
+      p.status21 = 'waiting';
+    }
+  });
+
+  // Deal 2 cards to dealer: 1 face up, 1 face down
+  const dealerCard1 = deck.pop() || { suit: 'clubs', value: '10', numericValue: 10 };
+  const dealerCard2 = deck.pop() || { suit: 'diamonds', value: '7', numericValue: 7 };
+  dealerCard2.hidden = true;
+  room.cyber21Dealer = {
+    hand: [dealerCard1, dealerCard2],
+    handValue: dealerCard1.numericValue,
+    status: 'idle'
+  };
+
+  addCyber21Log(roomId, `Krupiye kartları dağıttı. Açık Kart: ${dealerCard1.value}${suitSymbol(dealerCard1.suit)} (${dealerCard1.numericValue} Puan)`, 'dealer');
+  emitRoomUpdate(roomId);
+
+  setTimeout(() => {
+    if (room.phase !== 'cyber21_dealing') return;
+    room.phase = 'cyber21_player_turns';
+    advanceCyber21Turn(roomId, room);
+  }, 1200);
+}
+
+function advanceCyber21Turn(roomId: string, room: Room) {
+  const nextPlayer = room.players.find(p => p.status21 === 'waiting');
+  if (nextPlayer) {
+    room.cyber21TurnPlayerId = nextPlayer.id;
+    nextPlayer.status21 = 'playing';
+    addCyber21Log(roomId, `Hamle sırası: ${nextPlayer.name} (Puan: ${nextPlayer.handValue})`, 'player');
+    emitRoomUpdate(roomId);
+  } else {
+    room.cyber21TurnPlayerId = null;
+    startCyber21DealerTurn(roomId, room);
+  }
+}
+
+function startCyber21DealerTurn(roomId: string, room: Room) {
+  room.phase = 'cyber21_dealer_turn';
+  const dealer = room.cyber21Dealer!;
+  const deck = cyber21Decks[roomId];
+
+  // Reveal hole card
+  if (dealer.hand[1]) {
+    dealer.hand[1].hidden = false;
+  }
+  dealer.handValue = calculateHandValue(dealer.hand);
+  addCyber21Log(roomId, `Krupiye kapalı kartını açtı: ${dealer.hand[1]?.value}${suitSymbol(dealer.hand[1]?.suit)}. Toplam: ${dealer.handValue} Puan`, 'dealer');
+
+  if (isNaturalBlackjack(dealer.hand)) {
+    dealer.status = 'blackjack';
+    addCyber21Log(roomId, `⚡ KRUPİYE DOĞAL BLACKJACK YAPTI!`, 'dealer');
+    emitRoomUpdate(roomId);
+    setTimeout(() => endCyber21Round(roomId, room), 1500);
+    return;
+  }
+
+  emitRoomUpdate(roomId);
+
+  const allBusted = room.players.every(p => p.status21 === 'bust');
+  if (allBusted) {
+    dealer.status = 'stand';
+    addCyber21Log(roomId, `Tüm oyuncular battığı için krupiye kart çekmeden durdu.`, 'dealer');
+    emitRoomUpdate(roomId);
+    setTimeout(() => endCyber21Round(roomId, room), 1500);
+    return;
+  }
+
+  dealer.status = 'drawing';
+  const stepDealer = () => {
+    if (room.phase !== 'cyber21_dealer_turn') return;
+    if (dealer.handValue < 17) {
+      const newCard = deck.pop() || { suit: 'hearts', value: '5', numericValue: 5 };
+      dealer.hand.push(newCard);
+      dealer.handValue = calculateHandValue(dealer.hand);
+      addCyber21Log(roomId, `Krupiye kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} (Toplam: ${dealer.handValue} Puan)`, 'dealer');
+      if (dealer.handValue > 21) {
+        dealer.status = 'bust';
+        addCyber21Log(roomId, `💥 KRUPİYE BATTI (${dealer.handValue})!`, 'dealer');
+        emitRoomUpdate(roomId);
+        setTimeout(() => endCyber21Round(roomId, room), 1500);
+      } else {
+        emitRoomUpdate(roomId);
+        setTimeout(stepDealer, 1000);
+      }
+    } else {
+      dealer.status = 'stand';
+      addCyber21Log(roomId, `Krupiye ${dealer.handValue} puanda pas geçti.`, 'dealer');
+      emitRoomUpdate(roomId);
+      setTimeout(() => endCyber21Round(roomId, room), 1500);
+    }
+  };
+
+  setTimeout(stepDealer, 1000);
+}
+
+function endCyber21Round(roomId: string, room: Room) {
+  room.phase = 'cyber21_round_end';
+  const dealer = room.cyber21Dealer!;
+  const dealerScore = dealer.handValue;
+  const dealerBust = dealerScore > 21;
+  const dealerBJ = isNaturalBlackjack(dealer.hand);
+
+  room.players.forEach(p => {
+    const bet = p.currentBet || 0;
+    if (p.status21 === 'bust') {
+      p.roundResult = 'lose';
+      p.payout = 0;
+      addCyber21Log(roomId, `❌ ${p.name} battı. Kaybedilen: ${bet} çip`, 'player');
+    } else if (p.status21 === 'blackjack') {
+      if (dealerBJ) {
+        p.roundResult = 'push';
+        p.chips = (p.chips || 0) + bet;
+        p.payout = bet;
+        addCyber21Log(roomId, `🤝 ${p.name} Krupiye ile berabere (İkisi de Blackjack). ${bet} çip iade.`, 'player');
+      } else {
+        p.roundResult = 'blackjack';
+        const winProfit = Math.floor(bet * 1.5);
+        const totalPayout = bet + winProfit;
+        p.chips = (p.chips || 0) + totalPayout;
+        p.payout = totalPayout;
+        addCyber21Log(roomId, `⚡ ${p.name} Blackjack ile kazandı! +${winProfit} çip kar (${totalPayout} çip ödeme).`, 'player');
+      }
+    } else {
+      if (dealerBust) {
+        p.roundResult = 'win';
+        const totalPayout = bet * 2;
+        p.chips = (p.chips || 0) + totalPayout;
+        p.payout = totalPayout;
+        addCyber21Log(roomId, `🎉 ${p.name} kazandı (Krupiye battı)! +${bet} çip kar.`, 'player');
+      } else if (p.handValue! > dealerScore) {
+        p.roundResult = 'win';
+        const totalPayout = bet * 2;
+        p.chips = (p.chips || 0) + totalPayout;
+        p.payout = totalPayout;
+        addCyber21Log(roomId, `🎉 ${p.name} kazandı (${p.handValue} vs ${dealerScore})! +${bet} çip kar.`, 'player');
+      } else if (p.handValue === dealerScore) {
+        p.roundResult = 'push';
+        p.chips = (p.chips || 0) + bet;
+        p.payout = bet;
+        addCyber21Log(roomId, `🤝 ${p.name} Krupiye ile berabere (${p.handValue}). ${bet} çip iade.`, 'player');
+      } else {
+        p.roundResult = 'lose';
+        p.payout = 0;
+        addCyber21Log(roomId, `❌ ${p.name} kaybetti (${p.handValue} vs ${dealerScore}). -${bet} çip`, 'player');
+      }
+    }
+    p.score = p.chips || 0;
+  });
+
+  room.players.sort((a, b) => (b.chips || 0) - (a.chips || 0));
+  emitRoomUpdate(roomId);
+}
+
+  function emitRoomUpdate(roomId: string) {
+    if (rooms[roomId]) {
+      io.to(roomId).emit('room_update', rooms[roomId]);
+    }
+  }
+
+  function addSystemMessage(roomId: string, text: string) {
+    const room = rooms[roomId];
+    if (room) {
+      const msg: ChatMessage = {
+        id: Math.random().toString(36).substr(2, 9),
+        senderName: 'Sistem',
+        senderAvatar: '🤖',
+        text,
+        timestamp: Date.now(),
+        isSystem: true
+      };
+      room.chat.push(msg);
+      if (room.chat.length > 50) room.chat.shift();
+      emitRoomUpdate(roomId);
+    }
+  }
+
 io.on('connection', (socket: Socket) => {
   console.log(`User connected: ${socket.id}`);
 
@@ -125,12 +462,28 @@ io.on('connection', (socket: Socket) => {
       if (room.players.length < 1) return;
       if (room.players.filter(p => !p.isHost).some(p => !p.isReady)) return;
 
-      room.phase = room.settings.gameMode === 'lexis' ? 'lexis_write' : 'spin_questioner';
+      room.phase = room.settings.gameMode === 'lexis' ? 'lexis_write' : (room.settings.gameMode === 'cyber21' ? 'cyber21_betting' : 'spin_questioner');
       if(room.settings.gameMode === 'lexis') {
         room.lexisSubmissions = {};
         room.lexisAssignments = {};
         room.lexisGuesses = {};
         room.lexisCorrectGuesserIds = [];
+      }
+      room.currentRound = 0;
+      if (room.settings.gameMode === 'cyber21') {
+        room.cyber21Logs = [];
+        room.cyber21InitialChips = room.settings.startingChips || 10000;
+        room.players.forEach(p => {
+          p.chips = room.cyber21InitialChips;
+          p.score = p.chips;
+          p.currentBet = 0;
+          p.hand = [];
+          p.handValue = 0;
+          p.status21 = 'betting';
+          p.roundResult = null;
+        });
+        startCyber21Round(data.roomId, room);
+        return;
       }
       room.currentRound = 1;
       emitRoomUpdate(data.roomId);
@@ -347,8 +700,18 @@ io.on('connection', (socket: Socket) => {
         room.players.forEach(p => {
             p.isReady = false;
             p.score = 0; // Reset scores for next game
+            p.chips = room.settings.startingChips || 10000;
+            p.currentBet = 0;
+            p.hand = [];
+            p.handValue = 0;
+            p.status21 = 'waiting';
+            p.roundResult = null;
+            p.payout = 0;
             p.jokers = { pass: room.settings.passJokers, changeQuestion: room.settings.changeJokers };
         });
+        room.cyber21Dealer = undefined;
+        room.cyber21TurnPlayerId = null;
+        room.cyber21Logs = [];
         room.readyForNextRound = [];
         room.answerText = null;
         room.dareResult = null;
@@ -460,6 +823,123 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  
+  socket.on('cyber21_place_bet', (data: { roomId: string; bet: number }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyber21_betting') return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    const totalAvailable = (player.chips || 0) + (player.currentBet || 0);
+    const betAmount = Math.max(100, Math.min(data.bet, totalAvailable));
+    if (betAmount <= 0) return;
+
+    const diff = betAmount - (player.currentBet || 0);
+    player.chips = Math.max(0, (player.chips || 0) - diff);
+    player.currentBet = betAmount;
+    player.score = player.chips;
+    player.status21 = 'waiting';
+
+    addCyber21Log(data.roomId, `${player.name} ${betAmount.toLocaleString()} çip bahis koydu.`, 'player');
+    emitRoomUpdate(data.roomId);
+
+    // If all players confirmed their bets, transition immediately
+    const allBet = room.players.every(p => (p.currentBet || 0) > 0 && p.status21 === 'waiting');
+    if (allBet) {
+      if (cyber21Timers[data.roomId]) clearInterval(cyber21Timers[data.roomId]);
+      dealCyber21Cards(data.roomId, room);
+    }
+  });
+
+  socket.on('cyber21_hit', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyber21_player_turns') return;
+    if (room.cyber21TurnPlayerId !== socket.id) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.status21 !== 'playing') return;
+
+    const deck = cyber21Decks[data.roomId];
+    const newCard = deck.pop() || { suit: 'spades', value: '8', numericValue: 8 };
+    if (!player.hand) player.hand = [];
+    player.hand.push(newCard);
+    player.handValue = calculateHandValue(player.hand);
+
+    if (player.handValue > 21) {
+      player.status21 = 'bust';
+      addCyber21Log(data.roomId, `💥 ${player.name} kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} - BATTI (${player.handValue})!`, 'player');
+      emitRoomUpdate(data.roomId);
+      setTimeout(() => advanceCyber21Turn(data.roomId, room), 800);
+    } else if (player.handValue === 21) {
+      player.status21 = 'stand';
+      addCyber21Log(data.roomId, `🎯 ${player.name} kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} - 21 PUAN! Pas dedi.`, 'player');
+      emitRoomUpdate(data.roomId);
+      setTimeout(() => advanceCyber21Turn(data.roomId, room), 800);
+    } else {
+      addCyber21Log(data.roomId, `${player.name} kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} (Puan: ${player.handValue})`, 'player');
+      emitRoomUpdate(data.roomId);
+    }
+  });
+
+  socket.on('cyber21_stand', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyber21_player_turns') return;
+    if (room.cyber21TurnPlayerId !== socket.id) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.status21 !== 'playing') return;
+
+    player.status21 = 'stand';
+    addCyber21Log(data.roomId, `${player.name} ${player.handValue} puanda pas dedi.`, 'player');
+    emitRoomUpdate(data.roomId);
+    setTimeout(() => advanceCyber21Turn(data.roomId, room), 600);
+  });
+
+  socket.on('cyber21_double', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyber21_player_turns') return;
+    if (room.cyber21TurnPlayerId !== socket.id) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.status21 !== 'playing') return;
+    if ((player.hand?.length || 0) !== 2) return;
+
+    const currentBet = player.currentBet || 0;
+    if ((player.chips || 0) < currentBet) return;
+
+    player.chips = (player.chips || 0) - currentBet;
+    player.currentBet = currentBet * 2;
+    player.score = player.chips;
+
+    const deck = cyber21Decks[data.roomId];
+    const newCard = deck.pop() || { suit: 'diamonds', value: '9', numericValue: 9 };
+    if (!player.hand) player.hand = [];
+    player.hand.push(newCard);
+    player.handValue = calculateHandValue(player.hand);
+
+    if (player.handValue > 21) {
+      player.status21 = 'bust';
+      addCyber21Log(data.roomId, `⚡ ${player.name} bahsi 2'ye katladı (${player.currentBet} çip) ve kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} - BATTI (${player.handValue})!`, 'player');
+    } else {
+      player.status21 = 'stand';
+      addCyber21Log(data.roomId, `⚡ ${player.name} bahsi 2'ye katladı (${player.currentBet} çip) ve kart çekti: ${newCard.value}${suitSymbol(newCard.suit)} (Puan: ${player.handValue}).`, 'player');
+    }
+
+    emitRoomUpdate(data.roomId);
+    setTimeout(() => advanceCyber21Turn(data.roomId, room), 800);
+  });
+
+  socket.on('cyber21_next_round', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyber21_round_end') return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player?.isHost) return;
+
+    if (room.currentRound >= room.settings.rounds) {
+      room.phase = 'game_over';
+      emitRoomUpdate(data.roomId);
+    } else {
+      startCyber21Round(data.roomId, room);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     // Clean up rooms
@@ -471,40 +951,25 @@ io.on('connection', (socket: Socket) => {
         room.players.splice(playerIndex, 1);
         
         if (room.players.length === 0) {
+          if (cyber21Timers[roomId]) clearInterval(cyber21Timers[roomId]);
+          delete cyber21Decks[roomId];
           delete rooms[roomId];
         } else {
           if (player.isHost) {
             room.players[0].isHost = true; // Assign new host
           }
           addSystemMessage(roomId, `${player.name} odadan ayrıldı.`);
-          emitRoomUpdate(roomId);
+          
+          // Advance turn if it was this player's turn in cyber21
+          if (room.phase === 'cyber21_player_turns' && room.cyber21TurnPlayerId === socket.id) {
+            advanceCyber21Turn(roomId, room);
+          } else {
+            emitRoomUpdate(roomId);
+          }
         }
       }
     }
   });
-
-  function emitRoomUpdate(roomId: string) {
-    if (rooms[roomId]) {
-      io.to(roomId).emit('room_update', rooms[roomId]);
-    }
-  }
-
-  function addSystemMessage(roomId: string, text: string) {
-    const room = rooms[roomId];
-    if (room) {
-      const msg: ChatMessage = {
-        id: Math.random().toString(36).substr(2, 9),
-        senderName: 'Sistem',
-        senderAvatar: '🤖',
-        text,
-        timestamp: Date.now(),
-        isSystem: true
-      };
-      room.chat.push(msg);
-      if (room.chat.length > 50) room.chat.shift();
-      emitRoomUpdate(roomId);
-    }
-  }
 
   function startNextRound(roomId: string) {
       const room = rooms[roomId];

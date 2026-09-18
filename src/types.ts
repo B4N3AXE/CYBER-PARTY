@@ -1,3 +1,33 @@
+export type CardSuit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
+
+export interface Card {
+  suit: CardSuit;
+  value: string; // '2'-'10', 'J', 'Q', 'K', 'A'
+  numericValue: number; // 2-10, 10 for J/Q/K, 11 for A
+  hidden?: boolean;
+}
+
+export type Player21Status =
+  | 'waiting'
+  | 'betting'
+  | 'playing'
+  | 'stand'
+  | 'bust'
+  | 'blackjack';
+
+export interface Cyber21Dealer {
+  hand: Card[];
+  handValue: number;
+  status: 'idle' | 'drawing' | 'stand' | 'bust' | 'blackjack';
+}
+
+export interface Cyber21Log {
+  id: string;
+  text: string;
+  timestamp: number;
+  type: 'dealer' | 'player' | 'system';
+}
+
 export interface Player {
   id: string; // Socket ID
   name: string;
@@ -9,6 +39,14 @@ export interface Player {
     pass: number;
     changeQuestion: number;
   };
+  // Cyber-21 Tournament Mode fields
+  chips?: number;
+  currentBet?: number;
+  hand?: Card[];
+  handValue?: number;
+  status21?: Player21Status;
+  roundResult?: 'win' | 'lose' | 'push' | 'blackjack' | null;
+  payout?: number;
 }
 
 export type GamePhase =
@@ -25,7 +63,12 @@ export type GamePhase =
   | 'lexis_playing'
   | 'lexis_write'
   | 'lexis_guess'
-  | 'lexis_round_end';
+  | 'lexis_round_end'
+  | 'cyber21_betting'
+  | 'cyber21_dealing'
+  | 'cyber21_player_turns'
+  | 'cyber21_dealer_turn'
+  | 'cyber21_round_end';
 
 export interface ChatMessage {
   id: string;
@@ -44,7 +87,8 @@ export interface RoomSettings {
   maxPlayers?: number;
   timeLimit?: number;
   sfx?: boolean;
-  gameMode?: 'truth' | 'lexis';
+  gameMode?: 'truth' | 'lexis' | 'cyber21';
+  startingChips?: number;
 }
 
 export interface Room {
@@ -68,4 +112,10 @@ export interface Room {
   lexisAssignments?: Record<string, string>; // guesserId -> writerId
   lexisGuesses?: Record<string, string[]>;
   lexisCorrectGuesserIds?: string[];
+  // Cyber-21 fields
+  cyber21Dealer?: Cyber21Dealer;
+  cyber21TurnPlayerId?: string | null;
+  cyber21BetTimeLeft?: number;
+  cyber21Logs?: Cyber21Log[];
+  cyber21InitialChips?: number;
 }

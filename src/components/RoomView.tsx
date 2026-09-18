@@ -2,6 +2,7 @@ import { Room } from '../types';
 import Lobby from './Lobby';
 import GameBoard from './GameBoard';
 import LexisGame from './LexisGame';
+import Cyber21Game from './Cyber21Game';
 import ChatPanel from './ChatPanel';
 import socket from '../socket';
 
@@ -19,19 +20,23 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
     <div className="flex flex-col h-[100dvh] w-full overflow-hidden">
       {/* Top Navigation Bar */}
       <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 py-3.5 transition-all">
-        <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
+        <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 cursor-pointer group">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-neonPurple via-neonPink to-neonBlue flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] group-hover:scale-105 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse sm:w-7 sm:h-7"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
-                {room.settings?.gameMode === 'lexis' ? (
-                  <span className="font-display font-black text-2xl sm:text-3xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+                {room.settings?.gameMode === 'cyber21' ? (
+                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
+                    CYBER<span className="text-amber-400">21</span>
+                  </span>
+                ) : room.settings?.gameMode === 'lexis' ? (
+                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300">
                     CYBER<span className="text-cyan-400">LEXIS</span>
                   </span>
                 ) : (
-                  <span className="font-display font-black text-2xl sm:text-3xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
+                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
                     CYBER<span className="text-neonPink">SPIN</span>
                   </span>
                 )}
@@ -43,13 +48,13 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
             </div>
           </div>
           
-          {room.phase !== 'lobby' && room.phase !== 'game_over' && (
+          {room.phase !== 'game_over' && (
             <div className="hidden lg:flex items-center gap-4 bg-white/5 border border-white/10 px-4 py-1.5 rounded-2xl">
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-slate-400">Tur:</span>
                 <span className="font-display font-bold text-sm text-neonBlue">{room.currentRound} / {room.settings.rounds}</span>
               </div>
-              {activePlayer && (
+              {activePlayer && room.settings?.gameMode !== 'cyber21' && (
                 <>
                   <div className="h-4 w-[1px] bg-white/10"></div>
                   <div className="flex items-center gap-2 text-xs">
@@ -74,17 +79,25 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
               </div>
               <div className="hidden sm:block text-left">
                 <div className="text-xs font-bold leading-tight">{myPlayerInfo.name}</div>
-                <div className="text-[10px] text-neonBlue">{myPlayer?.score || 0} Puan</div>
+                <div className="text-[10px] text-neonBlue font-mono">
+                  {room.settings?.gameMode === 'cyber21'
+                    ? `${(myPlayer?.chips || 0).toLocaleString()} Çip`
+                    : `${myPlayer?.score || 0} Puan`}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Game Grid Layout */}
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start min-h-0 overflow-y-auto xl:overflow-hidden custom-scrollbar" style={{ overflowAnchor: "none" }}>
-        
-        {/* Left Column: Lobi & Oyuncu Masası */}
+      {/* Main Game Layout */}
+      {room.settings?.gameMode === 'cyber21' ? (
+        <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+          <Cyber21Game room={room} myPlayer={myPlayer} socket={socket} />
+        </main>
+      ) : (
+        <main className="w-full flex-1 px-4 sm:px-6 py-4 sm:py-6 grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start min-h-0 overflow-y-auto xl:overflow-hidden custom-scrollbar" style={{ overflowAnchor: "none" }}>
+          {/* Left Column: Lobi & Oyuncu Masası */}
         <section className="xl:col-span-3 flex flex-col gap-4 sm:gap-5 order-2 xl:order-1 min-w-0 h-full overflow-y-auto custom-scrollbar">
           <div className="glass-panel rounded-3xl p-5 shadow-2xl relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
@@ -116,11 +129,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
                           {isMe && !isTurn && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neonBlue/20 text-neonBlue font-mono shrink-0">SEN</span>}
                         </div>
                         <div className="text-[11px] text-slate-400 mt-0.5">
-                          {room.phase === 'lobby' ? (
-                            p.isReady ? <span className="text-emerald-400 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Hazır</span> : 'Bekliyor'
-                          ) : (
-                            isTurn ? <span className="text-neonPurple animate-pulse">Sıra Onda</span> : 'İzleyici'
-                          )}
+                          {isTurn ? <span className="text-neonPurple animate-pulse">Sıra Onda</span> : 'İzleyici'}
                         </div>
                       </div>
                     </div>
@@ -188,7 +197,8 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
           
           <ChatPanel chat={room.chat} roomId={room.id} />
         </section>
-      </main>
+        </main>
+      )}
     </div>
   );
 }
