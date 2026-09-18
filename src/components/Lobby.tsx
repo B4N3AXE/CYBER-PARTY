@@ -126,39 +126,77 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
           </div>
 
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-            {/* CyberTruth & Dare */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            {/* Cyber-Bomb (Word Bomb Arena) */}
             <div 
-              onClick={() => isHost && handleSettingChange('gameMode', 'truth')}
-              className={`rounded-3xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-4 relative group cursor-pointer ${selectedGame === 'truth' ? 'bg-[rgba(30,41,67,0.85)] border-2 border-pink-500 shadow-xl shadow-pink-500/15' : 'bg-[rgba(22,28,45,0.75)] border border-white/10 hover:border-pink-500/50 hover:-translate-y-1'}`}
+              onClick={() => isHost && handleSettingChange('gameMode', 'cyberbomb')}
+              className={`rounded-3xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-4 relative group cursor-pointer ${selectedGame === 'cyberbomb' ? 'bg-[rgba(30,41,67,0.85)] border-2 border-pink-500 shadow-xl shadow-pink-500/15' : 'bg-[rgba(22,28,45,0.75)] border border-white/10 hover:border-pink-500/50 hover:-translate-y-1'}`}
             >
-              {selectedGame === 'truth' && (
+              {selectedGame === 'cyberbomb' && (
                 <div className="absolute -top-3 right-4 bg-pink-500 text-white font-display font-black text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1">
                   <Check className="w-3 h-3 stroke-[3]" /> SEÇİLİ
                 </div>
               )}
               <div className="flex items-start justify-between">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-pink-500/30">
-                  🍾
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-600 to-red-500 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-pink-500/30">
+                  💣
                 </div>
               </div>
               <div>
-                <h3 className="font-display font-extrabold text-lg sm:text-xl text-white mb-1">CyberTruth</h3>
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-white mb-1">Cyber-Bomb</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Şişe ve çark çevirmece! Ekran dönsün, cesur sorular ve görevlerle parti kahkahaya boğulsun.
+                  Kelime zinciri ve patlama arenası! Süre dolmadan son harfle kelime yaz, bombayı başkasına fırlat.
                 </p>
               </div>
               <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-pink-400 font-semibold">
-                  <Flame className="w-4 h-4" />
-                  <span>Soru & Görev</span>
+                  <Flame className="w-4 h-4 text-pink-500" />
+                  <span>Zincir & Hız</span>
                 </div>
-                {selectedGame === 'truth' ? (
+                {selectedGame === 'cyberbomb' ? (
                   <span className="text-[10px] sm:text-xs font-bold text-pink-400 flex items-center gap-1">
                     Hazır <CheckCircle2 className="w-3.5 h-3.5" />
                   </span>
                 ) : (
                   <span className="text-[10px] sm:text-xs font-bold text-pink-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Seç <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Cyber21 (Blackjack Tournament) */}
+            <div 
+              onClick={() => isHost && handleSettingChange('gameMode', 'cyber21')}
+              className={`rounded-3xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-4 relative group cursor-pointer ${selectedGame === 'cyber21' ? 'bg-[rgba(30,41,67,0.85)] border-2 border-amber-400 shadow-xl shadow-amber-500/15' : 'bg-[rgba(22,28,45,0.75)] border border-white/10 hover:border-amber-400/50 hover:-translate-y-1'}`}
+            >
+              {selectedGame === 'cyber21' && (
+                <div className="absolute -top-3 right-4 bg-amber-400 text-slate-950 font-display font-black text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1">
+                  <Check className="w-3 h-3 stroke-[3]" /> SEÇİLİ
+                </div>
+              )}
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-amber-500/30">
+                  🃏
+                </div>
+              </div>
+              <div>
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-white mb-1">Cyber-21</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Krupiyeye karşı Blackjack turnuvası! 10.000 çip ile başla, kart çek, 21'e ulaş ve lider ol.
+                </p>
+              </div>
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-300 font-semibold">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span>Blackjack & Çip</span>
+                </div>
+                {selectedGame === 'cyber21' ? (
+                  <span className="text-[10px] sm:text-xs font-bold text-amber-400 flex items-center gap-1">
+                    Hazır <CheckCircle2 className="w-3.5 h-3.5" />
+                  </span>
+                ) : (
+                  <span className="text-[10px] sm:text-xs font-bold text-amber-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     Seç <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 )}
@@ -203,38 +241,38 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
               </div>
             </div>
 
-            {/* Cyber21 (Blackjack Tournament) */}
+            {/* CyberTruth & Dare */}
             <div 
-              onClick={() => isHost && handleSettingChange('gameMode', 'cyber21')}
-              className={`rounded-3xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-4 relative group cursor-pointer ${selectedGame === 'cyber21' ? 'bg-[rgba(30,41,67,0.85)] border-2 border-amber-400 shadow-xl shadow-amber-500/15' : 'bg-[rgba(22,28,45,0.75)] border border-white/10 hover:border-amber-400/50 hover:-translate-y-1'}`}
+              onClick={() => isHost && handleSettingChange('gameMode', 'truth')}
+              className={`rounded-3xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-4 relative group cursor-pointer ${selectedGame === 'truth' ? 'bg-[rgba(30,41,67,0.85)] border-2 border-pink-500 shadow-xl shadow-pink-500/15' : 'bg-[rgba(22,28,45,0.75)] border border-white/10 hover:border-pink-500/50 hover:-translate-y-1'}`}
             >
-              {selectedGame === 'cyber21' && (
-                <div className="absolute -top-3 right-4 bg-amber-400 text-slate-950 font-display font-black text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1">
+              {selectedGame === 'truth' && (
+                <div className="absolute -top-3 right-4 bg-pink-500 text-white font-display font-black text-[10px] sm:text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1">
                   <Check className="w-3 h-3 stroke-[3]" /> SEÇİLİ
                 </div>
               )}
               <div className="flex items-start justify-between">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-amber-500/30">
-                  🃏
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-pink-500/30">
+                  🍾
                 </div>
               </div>
               <div>
-                <h3 className="font-display font-extrabold text-lg sm:text-xl text-white mb-1">Cyber-21</h3>
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-white mb-1">CyberTruth</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Krupiyeye karşı Blackjack turnuvası! 10.000 çip ile başla, kart çek, 21'e ulaş ve lider ol.
+                  Şişe ve çark çevirmece! Ekran dönsün, cesur sorular ve görevlerle parti kahkahaya boğulsun.
                 </p>
               </div>
               <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-amber-300 font-semibold">
-                  <Zap className="w-4 h-4 text-yellow-400" />
-                  <span>Blackjack & Çip</span>
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-pink-400 font-semibold">
+                  <Flame className="w-4 h-4" />
+                  <span>Soru & Görev</span>
                 </div>
-                {selectedGame === 'cyber21' ? (
-                  <span className="text-[10px] sm:text-xs font-bold text-amber-400 flex items-center gap-1">
+                {selectedGame === 'truth' ? (
+                  <span className="text-[10px] sm:text-xs font-bold text-pink-400 flex items-center gap-1">
                     Hazır <CheckCircle2 className="w-3.5 h-3.5" />
                   </span>
                 ) : (
-                  <span className="text-[10px] sm:text-xs font-bold text-amber-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] sm:text-xs font-bold text-pink-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     Seç <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 )}
@@ -242,12 +280,12 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
             </div>
           </div>
 
-          <div className={`bg-[rgba(22,28,45,0.75)] backdrop-blur-md rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col gap-4 border ${selectedGame === 'cyber21' ? 'border-amber-500/20' : (selectedGame === 'lexis' ? 'border-cyan-500/20' : 'border-pink-500/20')}`}>
+          <div className={`bg-[rgba(22,28,45,0.75)] backdrop-blur-md rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col gap-4 border ${selectedGame === 'cyberbomb' ? 'border-pink-500/30 shadow-lg shadow-pink-500/10' : selectedGame === 'cyber21' ? 'border-amber-500/20' : (selectedGame === 'lexis' ? 'border-cyan-500/20' : 'border-pink-500/20')}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-white/10">
               <div>
-                <span className={`text-xs font-bold uppercase tracking-wider ${selectedGame === 'cyber21' ? 'text-amber-400' : (selectedGame === 'lexis' ? 'text-cyan-400' : 'text-pink-400')}`}>Lobi Durumu</span>
+                <span className={`text-xs font-bold uppercase tracking-wider ${selectedGame === 'cyberbomb' ? 'text-pink-400' : selectedGame === 'cyber21' ? 'text-amber-400' : (selectedGame === 'lexis' ? 'text-cyan-400' : 'text-pink-400')}`}>Lobi Durumu</span>
                 <h4 className="font-display font-bold text-lg text-white">
-                  {selectedGame === 'cyber21' ? 'Cyber-21 Turnuvası Başlamak Üzere' : (selectedGame === 'lexis' ? 'CyberLexis Turu Başlamak Üzere' : 'CyberTruth Turu Başlamak Üzere')}
+                  {selectedGame === 'cyberbomb' ? 'Cyber-Bomb Arenası Başlamak Üzere' : (selectedGame === 'cyber21' ? 'Cyber-21 Turnuvası Başlamak Üzere' : (selectedGame === 'lexis' ? 'CyberLexis Turu Başlamak Üzere' : 'CyberTruth Turu Başlamak Üzere'))}
                 </h4>
               </div>
               <div className="flex items-center gap-2">
@@ -259,7 +297,31 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
               </div>
             </div>
 
-            {selectedGame === 'lexis' ? (
+            {selectedGame === 'cyberbomb' ? (
+              <div className="bg-black/30 rounded-2xl p-4 sm:p-5 border border-pink-500/20 flex flex-col items-center text-center gap-3">
+                <span className="text-xs font-medium text-slate-400">Dinamik Kelime Havuzu &amp; Başlangıç Kuralı:</span>
+                <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-bold font-mono text-pink-400">
+                  <div className="bg-pink-950/50 px-3 py-1.5 rounded-xl border border-pink-500/30 flex items-center gap-1.5">
+                    <span className="text-slate-200">ROBO<strong className="text-pink-300">T</strong></span>
+                    <span className="text-cyan-400">➔</span>
+                    <span className="text-yellow-300 font-black">&apos;T&apos;</span>
+                  </div>
+                  <div className="bg-purple-950/50 px-3 py-1.5 rounded-xl border border-purple-500/30 flex items-center gap-1.5">
+                    <span className="text-slate-200">SİBE<strong className="text-purple-300">R</strong></span>
+                    <span className="text-cyan-400">➔</span>
+                    <span className="text-yellow-300 font-black">&apos;R&apos;</span>
+                  </div>
+                  <div className="bg-cyan-950/50 px-3 py-1.5 rounded-xl border border-cyan-500/30 flex items-center gap-1.5">
+                    <span className="text-slate-200">DİJİTA<strong className="text-cyan-300">L</strong></span>
+                    <span className="text-cyan-400">➔</span>
+                    <span className="text-yellow-300 font-black">&apos;L&apos;</span>
+                  </div>
+                </div>
+                <div className="text-xs sm:text-sm font-medium text-pink-300 max-w-lg leading-relaxed">
+                  &quot;Her maçta sistem <strong>rastgele bir başlangıç kelimesi</strong> seçer. Paslaşmalar arttıkça süre <strong>10s ➔ 8s ➔ 6s ➔ 5s</strong> olarak kademeli kısalır! Süre dolmadan son harfle başlayan kelimeni yazıp fırlat, yoksa bomba elinde patlar!&quot;
+                </div>
+              </div>
+            ) : selectedGame === 'lexis' ? (
               <div className="bg-black/30 rounded-2xl p-4 sm:p-5 border border-white/5 flex flex-col items-center text-center gap-3">
                 <span className="text-xs font-medium text-slate-400">Örnek Tur Sorusunu Gör:</span>
                 <div className="text-xs sm:text-sm font-medium text-slate-200 bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 w-full sm:w-auto">

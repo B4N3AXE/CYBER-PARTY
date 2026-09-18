@@ -28,6 +28,15 @@ export interface Cyber21Log {
   type: 'dealer' | 'player' | 'system';
 }
 
+export interface CyberBombLog {
+  id: string;
+  type: 'explosion' | 'transfer' | 'chat' | 'system';
+  title?: string;
+  text: string;
+  timestamp: number;
+  senderName?: string;
+}
+
 export interface Player {
   id: string; // Socket ID
   name: string;
@@ -47,6 +56,11 @@ export interface Player {
   status21?: Player21Status;
   roundResult?: 'win' | 'lose' | 'push' | 'blackjack' | null;
   payout?: number;
+  // Cyber-Bomb Mode fields
+  lives?: number;
+  maxLives?: number;
+  isEliminated?: boolean;
+  rp?: number;
 }
 
 export type GamePhase =
@@ -68,7 +82,9 @@ export type GamePhase =
   | 'cyber21_dealing'
   | 'cyber21_player_turns'
   | 'cyber21_dealer_turn'
-  | 'cyber21_round_end';
+  | 'cyber21_round_end'
+  | 'cyberbomb_playing'
+  | 'cyberbomb_round_end';
 
 export interface ChatMessage {
   id: string;
@@ -87,7 +103,7 @@ export interface RoomSettings {
   maxPlayers?: number;
   timeLimit?: number;
   sfx?: boolean;
-  gameMode?: 'truth' | 'lexis' | 'cyber21';
+  gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb';
   startingChips?: number;
 }
 
@@ -118,4 +134,16 @@ export interface Room {
   cyber21BetTimeLeft?: number;
   cyber21Logs?: Cyber21Log[];
   cyber21InitialChips?: number;
+  // Cyber-Bomb fields
+  bombHolderId?: string | null;
+  bombTimeLeft?: number;
+  bombMaxTime?: number;
+  bombPassStreak?: number;
+  bombLastWord?: string;
+  bombRequiredLetter?: string;
+  bombUsedWords?: string[];
+  bombExplosionCount?: number;
+  bombLogs?: CyberBombLog[];
+  bombStatus?: 'ticking' | 'exploded' | 'transferred';
+  bombHints?: string[];
 }

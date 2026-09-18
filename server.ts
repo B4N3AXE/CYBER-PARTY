@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { Server, Socket } from 'socket.io';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { Room, Player, GamePhase, RoomSettings, ChatMessage, Card, CardSuit, Cyber21Dealer, Cyber21Log, Player21Status } from './src/types.js';
+import { Room, Player, GamePhase, RoomSettings, ChatMessage, Card, CardSuit, Cyber21Dealer, Cyber21Log, Player21Status, CyberBombLog } from './src/types.js';
 
 const app = express();
 app.use(compression());
@@ -364,14 +364,264 @@ function endCyber21Round(roomId: string, room: Room) {
     }
   }
 
+// ==========================================
+// Cyber-Bomb (Kelime Bombası) Engine & Dictionary
+// ==========================================
+const cyberBombTimers: Record<string, NodeJS.Timeout> = {};
+
+const TURKISH_BOMB_WORDS: Record<string, string[]> = {
+  A: ['Algoritma', 'Anot', 'Anten', 'Akım', 'Atom', 'Asit', 'Ağ', 'Arayüz', 'Ateş', 'Altın'],
+  B: ['Bilişim', 'Bomba', 'Bellek', 'Bayt', 'Batarya', 'Biyometrik', 'Bant', 'Bağlantı', 'Buzul', 'Büyüteç'],
+  C: ['Cihaz', 'Cisim', 'Cıva', 'Canlı', 'Cevap', 'Cesaret', 'Cüzdan', 'Ceket'],
+  Ç: ['Çip', 'Çekirdek', 'Çözüm', 'Çark', 'Çerçeve', 'Çelik', 'Çizgi', 'Çıkış'],
+  D: ['Diyot', 'Direnç', 'Devre', 'Dalgaboyu', 'Dinamik', 'Disket', 'Darbe', 'Doku'],
+  E: ['Elektron', 'Ekran', 'Enerji', 'Evren', 'Eter', 'Eklenti', 'Eşik', 'Etki'],
+  F: ['Foton', 'Frekans', 'Filtre', 'Fiber', 'Füzyon', 'Format', 'Faktör', 'Fener'],
+  G: ['Gözlem', 'Güç', 'Girdi', 'Grafik', 'Geçit', 'Gövde', 'Gölge', 'Girdap'],
+  H: ['Hafıza', 'Hızlandırıcı', 'Hücre', 'Halka', 'Haberleşme', 'Hat', 'Hücum', 'Hedef'],
+  I: ['Işık', 'Isı', 'Isıtıcı', 'Işınım', 'Irgat', 'Irmak', 'Ilkım'],
+  İ: ['İnternet', 'İşlemci', 'İletken', 'İpucu', 'İvme', 'İletişim', 'İkili', 'İstasyon'],
+  J: ['Jeneratör', 'Joker', 'Jant', 'Jelatin', 'Jest', 'Judo'],
+  K: ['Kriptoloji', 'Kapsül', 'Karakter', 'Klavye', 'Kuantum', 'Kibernetik', 'Kristal', 'Kablo'],
+  L: ['Lazer', 'Lityum', 'Lojik', 'Lamba', 'Levha', 'Liman', 'Lokomotif'],
+  M: ['Manyetik', 'Mikroçip', 'Modem', 'Motor', 'Molekül', 'Madde', 'Mekanizma', 'Monitör'],
+  N: ['Nöron', 'Nükleer', 'Nanometre', 'Neon', 'Navigasyon', 'Nitelik', 'Nesne'],
+  O: ['Optik', 'Ozon', 'Otomata', 'Oksijen', 'Oda', 'Omurga', 'Ondalık'],
+  Ö: ['Ölçüm', 'Örnek', 'Özellik', 'Öbek', 'Öncü', 'Ölçek', 'Örgü'],
+  P: ['Proton', 'Piksel', 'Plazma', 'Panel', 'Protokol', 'Parola', 'Platform', 'Prizma'],
+  R: ['Robot', 'Radar', 'Roket', 'Radyasyon', 'Rezonans', 'Röle', 'Reaktör', 'Rota'],
+  S: ['Sensör', 'Siber', 'Sinyal', 'Sunucu', 'Sistem', 'Simülasyon', 'Silikon', 'Statik'],
+  Ş: ['Şifre', 'Şebeke', 'Şalter', 'Şimşek', 'Şarj', 'Şerit', 'Şema'],
+  T: ['Terminal', 'Teknoloji', 'Transistör', 'Türbin', 'Telepati', 'Termik', 'Titreşim', 'Teleskop'],
+  U: ['Uydu', 'Uçak', 'Ultra', 'Uzay', 'Usta', 'Uygulama', 'Ufuk'],
+  Ü: ['Üreteç', 'Ünite', 'Üçgen', 'Üstün', 'Ürün', 'Ültimatom'],
+  V: ['Voltaj', 'Vektör', 'Vakum', 'Virüs', 'Vana', 'Veri', 'Valans'],
+  Y: ['Yazılım', 'Yapay', 'Yarıiletken', 'Yıldız', 'Yörünge', 'Yakıt', 'Yansıma'],
+  Z: ['Zamanlayıcı', 'Zırh', 'Zincir', 'Zirve', 'Zonklama', 'Zemin']
+};
+
+function getTurkishUpper(str: string): string {
+  return str.trim().toLocaleUpperCase('tr-TR');
+}
+
+function getLastLetter(str: string): string {
+  const upper = getTurkishUpper(str);
+  for (let i = upper.length - 1; i >= 0; i--) {
+    const ch = upper[i];
+    if (/[ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ]/i.test(ch)) {
+      return ch;
+    }
+  }
+  return upper.slice(-1) || 'K';
+}
+
+function getHintsForLetter(letter: string): string[] {
+  const list = TURKISH_BOMB_WORDS[letter] || ['Kuantum', 'Kristal', 'Kapsül', 'Klavye'];
+  return list.slice(0, 4);
+}
+
+const STARTER_WORDS_POOL: string[] = [
+  'ROBOT', 'SİBER', 'DİJİTAL', 'KUANTUM', 'ALGORİTMA', 'TEKNOLOJİ',
+  'FREKANS', 'LAZER', 'RADAR', 'BATARYA', 'İŞLEMCİ', 'MANYETİK',
+  'UYDU', 'GRAFİK', 'KRİPTO', 'SENSÖR', 'TERMİNAL', 'YAZILIM',
+  'MODEM', 'NÖRON', 'PLAZMA', 'FİBER', 'VOLTAJ', 'DİRENÇ', 'FOTON',
+  'ANTEN', 'BİLİŞİM', 'ÇEKİRDEK', 'DEVRE', 'ELEKTRON', 'JENERATÖR',
+  'ZAMANLAYICI', 'ŞİFRE', 'ROKET', 'IŞIK', 'GÖZLEM', 'HÜCRE',
+  'DİYOT', 'BOMBA', 'PROJEKTÖR', 'MEKANİZMA', 'PROTOKOL', 'NAVİGASYON',
+  'SİMÜLASYON', 'SİNYAL', 'PİKSEL', 'REZONANS', 'KAPSÜL', 'ŞEBEKE',
+  'TÜRBİN', 'VERİ', 'YÖRÜNGE', 'ZIRH', 'KİBERNETİK', 'KODLAMA',
+  'KLAVYE', 'MONİTÖR', 'SUNUCU', 'İNTERNET', 'MİKROÇİP'
+];
+
+function getRandomBombStarterWord(): string {
+  // Collect from both curated starters and full dictionary
+  const dictWords: string[] = [];
+  Object.values(TURKISH_BOMB_WORDS).forEach(words => {
+    dictWords.push(...words);
+  });
+  const allChoices = [...STARTER_WORDS_POOL, ...dictWords];
+  const chosen = allChoices[Math.floor(Math.random() * allChoices.length)];
+  return getTurkishUpper(chosen);
+}
+
+function getBombTimeForStreak(streak: number): number {
+  if (streak <= 2) return 10;
+  if (streak <= 5) return 8;
+  if (streak <= 8) return 6;
+  return 5;
+}
+
+function addCyberBombLog(
+  roomId: string,
+  type: 'explosion' | 'transfer' | 'chat' | 'system',
+  title: string,
+  text: string,
+  senderName?: string
+) {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (!room.bombLogs) room.bombLogs = [];
+  const log: CyberBombLog = {
+    id: Math.random().toString(36).substring(2, 9),
+    type,
+    title,
+    text,
+    senderName,
+    timestamp: Date.now()
+  };
+  room.bombLogs.unshift(log);
+  if (room.bombLogs.length > 50) room.bombLogs.pop();
+}
+
+function startCyberBombTimer(roomId: string, room: Room) {
+  if (cyberBombTimers[roomId]) clearInterval(cyberBombTimers[roomId]);
+
+  cyberBombTimers[roomId] = setInterval(() => {
+    const r = rooms[roomId];
+    if (!r || r.phase !== 'cyberbomb_playing') {
+      clearInterval(cyberBombTimers[roomId]);
+      return;
+    }
+
+    if (r.bombTimeLeft === undefined) r.bombTimeLeft = 10;
+    r.bombTimeLeft -= 1;
+
+    if (r.bombTimeLeft <= 0) {
+      clearInterval(cyberBombTimers[roomId]);
+      r.bombTimeLeft = 0;
+      handleCyberBombExplosion(roomId, r);
+    } else {
+      emitRoomUpdate(roomId);
+    }
+  }, 1000);
+}
+
+function handleCyberBombExplosion(roomId: string, room: Room) {
+  room.bombStatus = 'exploded';
+  room.bombExplosionCount = (room.bombExplosionCount || 0) + 1;
+
+  const holder = room.players.find(p => p.id === room.bombHolderId) || room.players[0];
+  if (holder) {
+    holder.lives = Math.max(0, (holder.lives ?? 3) - 1);
+    addCyberBombLog(
+      roomId,
+      'explosion',
+      'PATLAMA KAYDI',
+      `${holder.name} süreyi geçirdi! BOMBA PATLADI! (-1 Can)`
+    );
+
+    if (holder.lives <= 0) {
+      holder.isEliminated = true;
+      addCyberBombLog(roomId, 'system', 'ELENME', `${holder.name} tüm canlarını kaybetti ve ELENDİ! 💀`);
+    }
+  }
+
+  // Check if round should end (only 1 player remains alive, given more than 1 players in room)
+  const alivePlayers = room.players.filter(p => !p.isEliminated);
+  if (alivePlayers.length <= 1 && room.players.length > 1) {
+    room.phase = 'cyberbomb_round_end';
+    const winner = alivePlayers[0] || holder;
+    if (winner) {
+      winner.score += 250;
+      winner.rp = (winner.rp || 1500) + 250;
+      addCyberBombLog(roomId, 'system', 'ŞAMPİYON', `🏆 ARENA ŞAMPİYONU: ${winner.name}!`);
+    }
+    emitRoomUpdate(roomId);
+    return;
+  }
+
+  emitRoomUpdate(roomId);
+
+  // Transition after showing explosion for 1.8 seconds
+  setTimeout(() => {
+    const r = rooms[roomId];
+    if (!r || r.phase !== 'cyberbomb_playing') return;
+
+    let activePool = r.players.filter(p => !p.isEliminated);
+    if (activePool.length === 0) {
+      r.players.forEach(p => { p.lives = 3; p.isEliminated = false; });
+      activePool = r.players;
+    }
+
+    let nextIdx = (activePool.findIndex(p => p.id === r.bombHolderId) + 1) % activePool.length;
+    const nextHolder = activePool[nextIdx];
+    r.bombHolderId = nextHolder.id;
+
+    const newWord = getRandomBombStarterWord();
+    r.bombLastWord = newWord;
+    r.bombRequiredLetter = getLastLetter(newWord);
+    r.bombHints = getHintsForLetter(r.bombRequiredLetter);
+    if (!r.bombUsedWords) r.bombUsedWords = [];
+    if (!r.bombUsedWords.includes(newWord)) r.bombUsedWords.push(newWord);
+    r.bombPassStreak = 0;
+    r.bombMaxTime = 10;
+    r.bombTimeLeft = 10;
+    r.bombStatus = 'ticking';
+
+    addCyberBombLog(
+      roomId,
+      'system',
+      'YENİ KELİME ZİNCİRİ',
+      `Yeni Başlangıç: "${newWord}" ➔ Bomba ${nextHolder.name}'ın elinde! '${r.bombRequiredLetter}' harfi ile başla! (10s)`
+    );
+
+    emitRoomUpdate(roomId);
+    startCyberBombTimer(roomId, r);
+  }, 1800);
+}
+
+function startCyberBombGame(roomId: string, room: Room) {
+  if (cyberBombTimers[roomId]) clearInterval(cyberBombTimers[roomId]);
+
+  room.phase = 'cyberbomb_playing';
+  room.currentRound = 1;
+  room.bombExplosionCount = 0;
+  room.bombLogs = [];
+  room.bombPassStreak = 0;
+  room.bombMaxTime = 10;
+
+  room.players.forEach((p, idx) => {
+    p.lives = 3;
+    p.maxLives = 3;
+    p.isEliminated = false;
+    p.score = p.score || 0;
+    p.rp = p.rp || (2450 - idx * 250);
+  });
+
+  // Pick random starter word from the dynamic Turkish pool
+  const starterWord = getRandomBombStarterWord();
+  room.bombLastWord = starterWord;
+  room.bombRequiredLetter = getLastLetter(starterWord);
+  room.bombHints = getHintsForLetter(room.bombRequiredLetter);
+  room.bombUsedWords = [starterWord];
+  room.bombHolderId = room.players[0]?.id || null;
+  room.bombTimeLeft = 10;
+  room.bombStatus = 'ticking';
+
+  addCyberBombLog(
+    roomId,
+    'system',
+    'ARENA PROTOKOLÜ BAŞLADI',
+    `Cyber-Bomb arenası aktif! Rastgele Başlangıç: "${starterWord}" ➔ İlk harf kuralı: '${room.bombRequiredLetter}'. İlk bomba ${room.players[0]?.name || 'Oyuncu'}'ın elinde!`
+  );
+
+  emitRoomUpdate(roomId);
+  startCyberBombTimer(roomId, room);
+}
+
 io.on('connection', (socket: Socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on('create_room', (data: { name: string; avatar: string }, callback) => {
+  socket.on('create_room', (data: { name: string; avatar: string; gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb' }, callback) => {
+    const trimmedName = (data.name || '').trim().slice(0, 15);
+    if (!trimmedName || trimmedName.length < 2) {
+      return callback({ success: false, message: 'Lütfen en az 2 karakterden oluşan geçerli bir oyuncu adı girin!' });
+    }
+
     const roomId = generateRoomCode();
     const player: Player = {
       id: socket.id,
-      name: data.name,
+      name: trimmedName,
       avatar: data.avatar,
       isHost: true,
       isReady: false,
@@ -379,9 +629,11 @@ io.on('connection', (socket: Socket) => {
       jokers: { pass: 1, changeQuestion: 1 }
     };
 
+    const initialMode = data.gameMode || 'cyberbomb';
+
     rooms[roomId] = {
       id: roomId,
-      settings: { rounds: 10, passJokers: 1, changeJokers: 1, isPrivate: false, maxPlayers: 8, timeLimit: 60, sfx: true, gameMode: 'truth' },
+      settings: { rounds: 10, passJokers: 1, changeJokers: 1, isPrivate: false, maxPlayers: 8, timeLimit: 60, sfx: true, gameMode: initialMode },
       players: [player],
       phase: 'lobby',
       currentRound: 0,
@@ -401,10 +653,44 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('join_room', (data: { roomId: string; name: string; avatar: string }, callback) => {
-    const room = rooms[data.roomId];
-    if (!room) {
-      return callback({ success: false, message: 'Oda bulunamadı' });
+    const trimmedName = (data.name || '').trim().slice(0, 15);
+    if (!trimmedName || trimmedName.length < 2) {
+      return callback({ success: false, message: 'Lütfen en az 2 karakterden oluşan geçerli bir oyuncu adı girin!' });
     }
+
+    const cleanId = data.roomId.trim().toUpperCase().replace('#', '');
+    let room = rooms[data.roomId] || rooms[cleanId];
+
+    // Seamless auto-provisioning for custom codes
+    if (!room) {
+      let mode: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb' = 'cyberbomb';
+      if (cleanId.includes('VEGAS') || cleanId.includes('777') || cleanId.includes('21')) mode = 'cyber21';
+      else if (cleanId.includes('NEON') || cleanId.includes('SPIN') || cleanId.includes('101')) mode = 'truth';
+      else if (cleanId.includes('LEXIS') || cleanId.includes('888')) mode = 'lexis';
+
+      const targetId = cleanId;
+      rooms[targetId] = {
+        id: targetId,
+        settings: { rounds: 10, passJokers: 1, changeJokers: 1, isPrivate: false, maxPlayers: 8, timeLimit: 60, sfx: true, gameMode: mode },
+        players: [],
+        phase: 'lobby',
+        currentRound: 0,
+        questionerId: null,
+        answererId: null,
+        selectedType: null,
+        question: null,
+        proofMedia: null,
+        votes: {},
+        bets: {},
+        chat: [],
+        answerText: null,
+        dareResult: null,
+        readyForNextRound: []
+      };
+      room = rooms[targetId];
+      data.roomId = targetId;
+    }
+
     if (room.phase !== 'lobby') {
       return callback({ success: false, message: 'Oyun zaten başlamış' });
     }
@@ -413,22 +699,31 @@ io.on('connection', (socket: Socket) => {
       return callback({ success: false, message: 'Zaten odadasınız' });
     }
 
+    // Uniqueness check: check if any player in this room already has this nickname (case-insensitive)
+    const nameConflict = room.players.some(p => p.name.trim().toLowerCase() === trimmedName.toLowerCase());
+    if (nameConflict) {
+      return callback({ 
+        success: false, 
+        message: `"${trimmedName}" adı bu odada zaten kullanılıyor! Lütfen farklı ve benzersiz bir oyuncu adı seçin.` 
+      });
+    }
+
     const player: Player = {
       id: socket.id,
-      name: data.name,
+      name: trimmedName,
       avatar: data.avatar,
-      isHost: false,
+      isHost: room.players.length === 0,
       isReady: false,
       score: 0,
       jokers: { pass: room.settings.passJokers, changeQuestion: room.settings.changeJokers }
     };
 
     room.players.push(player);
-    socket.join(data.roomId);
-    callback({ success: true, roomId: data.roomId });
+    socket.join(room.id);
+    callback({ success: true, roomId: room.id });
     
-    addSystemMessage(data.roomId, `${data.name} odaya katıldı!`);
-    emitRoomUpdate(data.roomId);
+    addSystemMessage(room.id, `${data.name} odaya katıldı!`);
+    emitRoomUpdate(room.id);
   });
 
   socket.on('update_settings', (data: { roomId: string; settings: RoomSettings }) => {
@@ -470,6 +765,10 @@ io.on('connection', (socket: Socket) => {
         room.lexisCorrectGuesserIds = [];
       }
       room.currentRound = 0;
+      if (room.settings.gameMode === 'cyberbomb') {
+        startCyberBombGame(data.roomId, room);
+        return;
+      }
       if (room.settings.gameMode === 'cyber21') {
         room.cyber21Logs = [];
         room.cyber21InitialChips = room.settings.startingChips || 10000;
@@ -940,6 +1239,105 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  // Cyber-Bomb Socket Handlers
+  socket.on('submit_bomb_word', (data: { roomId: string; word: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || room.phase !== 'cyberbomb_playing') return;
+    if (room.bombHolderId !== socket.id) {
+      socket.emit('bomb_error', { message: 'Şu an bomba sende değil!' });
+      return;
+    }
+
+    const word = data.word?.trim();
+    if (!word || word.length < 2) {
+      socket.emit('bomb_error', { message: 'En az 2 harfli bir kelime girmelisin!' });
+      return;
+    }
+
+    const upperWord = getTurkishUpper(word);
+    const firstLetter = upperWord[0];
+    const reqLetter = room.bombRequiredLetter || 'K';
+
+    if (firstLetter !== reqLetter) {
+      socket.emit('bomb_error', { message: `Kelime '${reqLetter}' harfi ile başlamalı!` });
+      return;
+    }
+
+    if (room.bombUsedWords && room.bombUsedWords.includes(upperWord)) {
+      socket.emit('bomb_error', { message: `"${upperWord}" bu oyunda zaten kullanıldı!` });
+      return;
+    }
+
+    if (!room.bombUsedWords) room.bombUsedWords = [];
+    room.bombUsedWords.push(upperWord);
+
+    const holder = room.players.find(p => p.id === socket.id);
+    if (holder) {
+      holder.score = (holder.score || 0) + 50;
+      holder.rp = (holder.rp || 1500) + 50;
+    }
+
+    const nextLetter = getLastLetter(upperWord);
+    room.bombLastWord = upperWord;
+    room.bombRequiredLetter = nextLetter;
+    room.bombHints = getHintsForLetter(nextLetter);
+
+    const alivePlayers = room.players.filter(p => !p.isEliminated);
+    if (alivePlayers.length === 0) return;
+
+    let nextIdx = 0;
+    const currentIdx = alivePlayers.findIndex(p => p.id === socket.id);
+    if (currentIdx !== -1) {
+      nextIdx = (currentIdx + 1) % alivePlayers.length;
+    }
+    const nextHolder = alivePlayers[nextIdx];
+    room.bombHolderId = nextHolder.id;
+
+    const prevMax = room.bombMaxTime || 10;
+    room.bombPassStreak = (room.bombPassStreak || 0) + 1;
+    const nextMax = getBombTimeForStreak(room.bombPassStreak);
+    room.bombMaxTime = nextMax;
+    room.bombTimeLeft = nextMax;
+    room.bombStatus = 'transferred';
+
+    addCyberBombLog(
+      data.roomId,
+      'transfer',
+      'TRANSFER BAŞARILI',
+      `${holder?.name || 'Oyuncu'} -> "${upperWord}" yazdı -> Bomba ${nextHolder.name}'a fırlatıldı! (${nextMax}s)`,
+      holder?.name
+    );
+
+    if (nextMax < prevMax) {
+      addCyberBombLog(
+        data.roomId,
+        'system',
+        '⚡ GERİLİM ARTTI',
+        `Paslaşma: ${room.bombPassStreak} ➔ SÜRE KISALDI: Artık her tur ${nextMax} SANİYE!`
+      );
+    }
+
+    emitRoomUpdate(data.roomId);
+    startCyberBombTimer(data.roomId, room);
+  });
+
+  socket.on('cyberbomb_quick_reaction', (data: { roomId: string; reaction: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+    addCyberBombLog(data.roomId, 'chat', player.name, data.reaction, player.name);
+    emitRoomUpdate(data.roomId);
+  });
+
+  socket.on('cyberbomb_next_round', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player?.isHost) return;
+    startCyberBombGame(data.roomId, room);
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     // Clean up rooms
@@ -952,6 +1350,7 @@ io.on('connection', (socket: Socket) => {
         
         if (room.players.length === 0) {
           if (cyber21Timers[roomId]) clearInterval(cyber21Timers[roomId]);
+          if (cyberBombTimers[roomId]) clearInterval(cyberBombTimers[roomId]);
           delete cyber21Decks[roomId];
           delete rooms[roomId];
         } else {
@@ -960,9 +1359,17 @@ io.on('connection', (socket: Socket) => {
           }
           addSystemMessage(roomId, `${player.name} odadan ayrıldı.`);
           
-          // Advance turn if it was this player's turn in cyber21
+          // Advance turn if it was this player's turn in cyber21 or cyberbomb
           if (room.phase === 'cyber21_player_turns' && room.cyber21TurnPlayerId === socket.id) {
             advanceCyber21Turn(roomId, room);
+          } else if (room.phase === 'cyberbomb_playing' && room.bombHolderId === socket.id) {
+            const alive = room.players.filter(p => !p.isEliminated);
+            if (alive.length > 0) {
+              room.bombHolderId = alive[0].id;
+              room.bombTimeLeft = 10;
+              addCyberBombLog(roomId, 'system', 'BOMBA AKTARILDI', `${player.name} ayrıldığı için bomba ${alive[0].name}'a geçti.`);
+              startCyberBombTimer(roomId, room);
+            }
           } else {
             emitRoomUpdate(roomId);
           }

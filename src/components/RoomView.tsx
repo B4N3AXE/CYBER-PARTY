@@ -3,6 +3,7 @@ import Lobby from './Lobby';
 import GameBoard from './GameBoard';
 import LexisGame from './LexisGame';
 import Cyber21Game from './Cyber21Game';
+import CyberBombGame from './CyberBombGame';
 import ChatPanel from './ChatPanel';
 import socket from '../socket';
 
@@ -27,7 +28,11 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse sm:w-7 sm:h-7"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
-                {room.settings?.gameMode === 'cyber21' ? (
+                {room.settings?.gameMode === 'cyberbomb' ? (
+                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-400">
+                    CYBER<span className="text-pink-500">BOMB</span>
+                  </span>
+                ) : room.settings?.gameMode === 'cyber21' ? (
                   <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
                     CYBER<span className="text-amber-400">21</span>
                   </span>
@@ -54,7 +59,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
                 <span className="text-slate-400">Tur:</span>
                 <span className="font-display font-bold text-sm text-neonBlue">{room.currentRound} / {room.settings.rounds}</span>
               </div>
-              {activePlayer && room.settings?.gameMode !== 'cyber21' && (
+              {activePlayer && room.settings?.gameMode !== 'cyber21' && room.settings?.gameMode !== 'cyberbomb' && (
                 <>
                   <div className="h-4 w-[1px] bg-white/10"></div>
                   <div className="flex items-center gap-2 text-xs">
@@ -80,7 +85,9 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
               <div className="hidden sm:block text-left">
                 <div className="text-xs font-bold leading-tight">{myPlayerInfo.name}</div>
                 <div className="text-[10px] text-neonBlue font-mono">
-                  {room.settings?.gameMode === 'cyber21'
+                  {room.settings?.gameMode === 'cyberbomb'
+                    ? `${(myPlayer?.rp || 1500).toLocaleString()} RP`
+                    : room.settings?.gameMode === 'cyber21'
                     ? `${(myPlayer?.chips || 0).toLocaleString()} Çip`
                     : `${myPlayer?.score || 0} Puan`}
                 </div>
@@ -91,7 +98,11 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
       </header>
 
       {/* Main Game Layout */}
-      {room.settings?.gameMode === 'cyber21' ? (
+      {room.settings?.gameMode === 'cyberbomb' ? (
+        <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+          <CyberBombGame room={room} myPlayer={myPlayer} socket={socket} />
+        </main>
+      ) : room.settings?.gameMode === 'cyber21' ? (
         <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
           <Cyber21Game room={room} myPlayer={myPlayer} socket={socket} />
         </main>

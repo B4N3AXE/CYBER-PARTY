@@ -1,6 +1,6 @@
 {
-  "name": "CyberHub",
-  "description": "Siberpunk temalı, çok oyunculu Cyber-21 (Blackjack Turnuvası), CyberLexis ve Truth & Dare parti oyunları platformu.",
+  "name": "CyberParty",
+  "description": "Siberpunk temalı, çok oyunculu Cyber-Bomb (Kelime Bombası Arenası), Cyber-21 (Blackjack Turnuvası), CyberLexis ve Truth & Dare parti oyunları platformu.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
