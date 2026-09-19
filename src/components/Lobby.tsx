@@ -3,7 +3,7 @@ import { Room, Player } from '../types';
 import socket from '../socket';
 import { Gamepad2, Copy, Volume2, LogOut, Sparkles, Flame, ArrowRight, Check, Zap, CheckCircle2, Play, UserPlus, Users, MessageCircle, Send, Settings, Lock, Clock, RefreshCw } from 'lucide-react';
 
-export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Player }) {
+export default function Lobby({ room, myPlayer, onLeaveRoom }: { room: Room, myPlayer?: Player, onLeaveRoom?: () => void }) {
   const isHost = myPlayer?.isHost;
   const selectedGame = room.settings?.gameMode || 'truth';
   const [isMuted, setIsMuted] = useState(false);
@@ -104,7 +104,11 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
                 <span className="text-xs text-emerald-400 font-medium">{isHost ? 'Oda Yöneticisi' : 'Parti Üyesi'}</span>
               </div>
             </div>
-            <button onClick={() => window.location.reload()} className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 hover:text-red-300 transition ml-1" title="Odadan Ayrıl">
+            <button 
+              onClick={() => onLeaveRoom ? onLeaveRoom() : window.location.reload()} 
+              className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 hover:text-red-300 transition ml-1" 
+              title="Odadan Ayrıl"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>

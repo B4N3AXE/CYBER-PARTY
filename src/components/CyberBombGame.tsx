@@ -15,16 +15,18 @@ import {
   Zap, 
   ShieldAlert,
   Clock,
-  MessageSquare
+  MessageSquare,
+  LogOut
 } from 'lucide-react';
 
 interface CyberBombGameProps {
   room: Room;
   myPlayer?: Player;
   socket: Socket;
+  onRequestExit?: () => void;
 }
 
-export default function CyberBombGame({ room, myPlayer, socket }: CyberBombGameProps) {
+export default function CyberBombGame({ room, myPlayer, socket, onRequestExit }: CyberBombGameProps) {
   const [wordInput, setWordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState('');
@@ -180,6 +182,16 @@ export default function CyberBombGame({ room, myPlayer, socket }: CyberBombGameP
             <span className="text-slate-400">CANLI:</span>
             <span className="text-emerald-300 font-bold">{alivePlayers.length} / {room.players.length}</span>
           </div>
+          {onRequestExit && (
+            <button
+              onClick={onRequestExit}
+              className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 hover:border-red-500/60 text-red-300 flex items-center gap-1.5 font-sans font-bold transition hover:scale-105 active:scale-95 cursor-pointer"
+              title="Lobiye Dön"
+            >
+              <LogOut className="w-3.5 h-3.5 text-red-400" />
+              <span>Lobiye Dön</span>
+            </button>
+          )}
         </div>
       </header>
 

@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { Room, Player, Card, CardSuit } from '../types';
-import { Trophy, Coins, ShieldAlert, Award, Play, RotateCcw, Send, Sparkles, AlertCircle, ArrowUpRight, Flame, Bot } from 'lucide-react';
+import { Trophy, Coins, ShieldAlert, Award, Play, RotateCcw, Send, Sparkles, AlertCircle, ArrowUpRight, Flame, Bot, LogOut } from 'lucide-react';
 
 interface Cyber21GameProps {
   room: Room;
   myPlayer: Player | undefined;
   socket: Socket;
+  onRequestExit?: () => void;
 }
 
 const CHIP_PRESETS = [100, 250, 500, 1000, 2500];
 
-export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps) {
+export default function Cyber21Game({ room, myPlayer, socket, onRequestExit }: Cyber21GameProps) {
   const [selectedBet, setSelectedBet] = useState<number>(500);
   const [chatMessage, setChatMessage] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<'all' | 'chat' | 'logs'>('all');
@@ -267,7 +268,7 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
         </div>
 
         {/* Room & Instructions */}
-        <div className="pt-2.5 border-t border-white/10 text-xs text-slate-300 flex flex-col gap-1 shrink-0">
+        <div className="pt-2.5 border-t border-white/10 text-xs text-slate-300 flex flex-col gap-2 shrink-0">
           <div className="flex justify-between items-center">
             <span>Oda Kodu: <strong className="text-cyan-300 font-mono font-bold text-sm">#{room.id}</strong></span>
             <span className="text-emerald-400 font-bold">Canlı Turnuva</span>
@@ -275,6 +276,15 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
           <p className="text-xs text-slate-400 italic">
             Tur sonunda kasasında en çok çip kalan şampiyon olur.
           </p>
+          {onRequestExit && (
+            <button
+              onClick={onRequestExit}
+              className="w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 hover:text-red-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5 text-red-400" />
+              Lobiye Dön / Çıkış
+            </button>
+          )}
         </div>
       </section>
 
@@ -283,6 +293,17 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
         
         {/* Top: Krupiye / Dealer Area */}
         <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-black/35 border border-white/10 relative">
+          {onRequestExit && (
+            <button
+              id="cyber21-dealer-btn-exit"
+              onClick={onRequestExit}
+              className="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 hover:border-red-500/50 text-red-300 flex items-center gap-1.5 text-xs font-bold transition shadow-sm hover:scale-105 active:scale-95 cursor-pointer z-10"
+              title="Lobiye Dön"
+            >
+              <LogOut className="w-3.5 h-3.5 text-red-400" />
+              <span className="hidden sm:inline">Lobiye Dön</span>
+            </button>
+          )}
           <div className="flex items-center gap-2.5 mb-2">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.5)]">
               <Bot className="w-5 h-5 text-white" />

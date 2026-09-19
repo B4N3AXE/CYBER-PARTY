@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Room } from '../types';
 import Lobby from './Lobby';
 import GameBoard from './GameBoard';
@@ -6,48 +7,78 @@ import Cyber21Game from './Cyber21Game';
 import CyberBombGame from './CyberBombGame';
 import ChatPanel from './ChatPanel';
 import socket from '../socket';
+import { LogOut, AlertTriangle, X, Play, RotateCcw } from 'lucide-react';
 
-export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerInfo: {name: string, avatar: string} }) {
+export default function RoomView({ 
+  room, 
+  myPlayerInfo,
+  onLeaveRoom
+}: { 
+  room: Room; 
+  myPlayerInfo: { name: string; avatar: string };
+  onLeaveRoom?: () => void;
+}) {
+  const [showExitModal, setShowExitModal] = useState(false);
   const myPlayer = room.players.find(p => p.id === socket.id);
   const isHost = myPlayer?.isHost;
 
   const activePlayer = room.players.find(p => p.id === room.questionerId || p.id === room.answererId) || room.players[0];
 
   if (room.phase === 'lobby') {
-    return <Lobby room={room} myPlayer={myPlayer} />;
+    return <Lobby room={room} myPlayer={myPlayer} onLeaveRoom={onLeaveRoom} />;
   }
 
+  // Determine warning message based on current active game state
+  const isCyber21 = room.settings?.gameMode === 'cyber21';
+  const isCyberBomb = room.settings?.gameMode === 'cyberbomb';
+  const hasActiveBet = isCyber21 && (myPlayer?.currentBet || 0) > 0;
+  const isGameRunning = room.phase !== 'game_over';
+
+  const handleReturnRoomToLobby = () => {
+    socket.emit('return_to_lobby', { roomId: room.id });
+    setShowExitModal(false);
+  };
+
+  const handleLeaveToMainMenu = () => {
+    setShowExitModal(false);
+    if (onLeaveRoom) {
+      onLeaveRoom();
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen w-full overflow-x-hidden">
+    <div className="flex flex-col min-h-screen w-full overflow-x-hidden relative">
       {/* Top Navigation Bar */}
-      <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 py-3.5 transition-all">
-        <div className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-neonPurple via-neonPink to-neonBlue flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] group-hover:scale-105 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse sm:w-7 sm:h-7"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+      <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-3 sm:px-6 py-3.5 transition-all">
+        <div className="w-full flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-neonPurple via-neonPink to-neonBlue flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] group-hover:scale-105 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
                 {room.settings?.gameMode === 'cyberbomb' ? (
-                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-400">
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-400">
                     CYBER<span className="text-pink-500">BOMB</span>
                   </span>
                 ) : room.settings?.gameMode === 'cyber21' ? (
-                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-300">
                     CYBER<span className="text-amber-400">21</span>
                   </span>
                 ) : room.settings?.gameMode === 'lexis' ? (
-                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-300">
                     CYBER<span className="text-cyan-400">LEXIS</span>
                   </span>
                 ) : (
-                  <span className="font-display font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-300">
                     CYBER<span className="text-neonPink">SPIN</span>
                   </span>
                 )}
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>PARTİ ODASI: <strong className="text-neonBlue tracking-wider">#{room.id}</strong></span>
+                  <span>ODA: <strong className="text-neonBlue tracking-wider">#{room.id}</strong></span>
                 </div>
               </div>
             </div>
@@ -74,16 +105,31 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2.5 pl-2 border-l border-white/10">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* LOBİYE DÖN / ÇIKIŞ BUTONU */}
+            <button
+              id="header-btn-leave-lobby"
+              onClick={() => setShowExitModal(true)}
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 hover:text-red-200 border border-red-500/35 hover:border-red-500/60 text-xs sm:text-sm font-bold transition-all shadow-[0_0_15px_rgba(239,68,68,0.25)] hover:scale-105 active:scale-95 cursor-pointer"
+              title="Lobiye Dön veya Odadan Ayrıl"
+            >
+              <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+              <span>Lobiye Dön</span>
+            </button>
+
+            {/* Oyuncu Profili */}
+            <div className="flex items-center gap-2 sm:gap-2.5 pl-2 border-l border-white/10">
               <div className="relative">
-                <div className="w-9 h-9 flex items-center justify-center text-xl rounded-full bg-gradient-to-br from-neonPink to-neonBlue p-0.5 shadow-neon-blue">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-lg sm:text-xl rounded-full bg-gradient-to-br from-neonPink to-neonBlue p-0.5 shadow-neon-blue">
                   <div className="w-full h-full bg-darkBg rounded-full flex items-center justify-center">{myPlayerInfo.avatar}</div>
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-darkBg"></span>
               </div>
-              <div className="hidden sm:block text-left">
-                <div className="text-xs font-bold leading-tight">{myPlayerInfo.name}</div>
+              <div className="hidden md:block text-left">
+                <div className="text-xs font-bold leading-tight flex items-center gap-1">
+                  {myPlayerInfo.name}
+                  {isHost && <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded font-mono font-bold">HOST</span>}
+                </div>
                 <div className="text-[10px] text-neonBlue font-mono">
                   {room.settings?.gameMode === 'cyberbomb'
                     ? `${(myPlayer?.rp || 1500).toLocaleString()} RP`
@@ -100,11 +146,11 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
       {/* Main Game Layout */}
       {room.settings?.gameMode === 'cyberbomb' ? (
         <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
-          <CyberBombGame room={room} myPlayer={myPlayer} socket={socket} />
+          <CyberBombGame room={room} myPlayer={myPlayer} socket={socket} onRequestExit={() => setShowExitModal(true)} />
         </main>
       ) : room.settings?.gameMode === 'cyber21' ? (
         <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
-          <Cyber21Game room={room} myPlayer={myPlayer} socket={socket} />
+          <Cyber21Game room={room} myPlayer={myPlayer} socket={socket} onRequestExit={() => setShowExitModal(true)} />
         </main>
       ) : (
         <main className="w-full flex-1 px-4 sm:px-6 py-4 sm:py-6 grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start min-h-0 overflow-y-auto xl:overflow-hidden custom-scrollbar" style={{ overflowAnchor: "none" }}>
@@ -209,6 +255,107 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
           <ChatPanel chat={room.chat} roomId={room.id} />
         </section>
         </main>
+      )}
+
+      {/* GÜVENLİ ÇIKIŞ / LOBİYE DÖN ONAY MODALI */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-[#0e1629] border border-cyan-500/30 rounded-3xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-5 text-slate-100">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <LogOut className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-xl text-white tracking-wide">
+                    Lobiye Dönüş Onayı
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Oda #{room.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Warning Box */}
+            <div className={`p-4 rounded-2xl border text-sm leading-relaxed flex items-start gap-3 ${
+              hasActiveBet
+                ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                : isGameRunning
+                ? 'bg-rose-950/30 border-rose-500/30 text-rose-200'
+                : 'bg-cyan-950/30 border-cyan-500/30 text-slate-300'
+            }`}>
+              <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${
+                hasActiveBet ? 'text-amber-400' : 'text-rose-400'
+              }`} />
+              <div>
+                {hasActiveBet ? (
+                  <>
+                    <strong className="block font-bold text-amber-300 mb-1">
+                      ⚠️ Aktif Bahis Devam Ediyor!
+                    </strong>
+                    Masada <span className="font-mono font-bold text-white underline">{myPlayer?.currentBet?.toLocaleString()} Çip</span> tutarında aktif bahsin bulunuyor. Şimdi çıkarsan veya tur sonlandırılırsa yatırdığın bahis yanabilir.
+                  </>
+                ) : isCyber21 && isGameRunning ? (
+                  <>
+                    <strong className="block font-bold text-amber-300 mb-1">
+                      ⚠️ Canlı Turnuva Devam Ediyor!
+                    </strong>
+                    Cyber-21 masasında devam eden bir el var. Erken çıkmak istediğine emin misin?
+                  </>
+                ) : isCyberBomb && isGameRunning ? (
+                  <>
+                    <strong className="block font-bold text-rose-300 mb-1">
+                      ⚠️ Bomba Arenası Aktif!
+                    </strong>
+                    Maç devam ederken ayrılırsan elenmiş sayılacaksın.
+                  </>
+                ) : (
+                  <>
+                    Lobiye dönmek veya odadan ayrılmak istediğine emin misin?
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2.5 pt-2">
+              {isHost && (
+                <button
+                  id="btn-confirm-return-lobby-all"
+                  onClick={handleReturnRoomToLobby}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.35)] transition cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Odayı Lobiye Döndür (Tüm Masayla)
+                </button>
+              )}
+
+              <button
+                id="btn-confirm-leave-room"
+                onClick={handleLeaveToMainMenu}
+                className="w-full py-3 px-4 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-red-400" />
+                Odadan Ayrıl & Ana Menüye Dön
+              </button>
+
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-sm transition cursor-pointer"
+              >
+                Vazgeç / Masada Kal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

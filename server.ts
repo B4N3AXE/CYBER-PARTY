@@ -994,28 +994,100 @@ io.on('connection', (socket: Socket) => {
     const room = rooms[data.roomId];
     if (!room) return;
     const player = room.players.find(p => p.id === socket.id);
-    if (player?.isHost && room.phase === 'game_over') {
+    if (player?.isHost) {
+        // Clear all active game timers
+        if (cyber21Timers[data.roomId]) {
+          clearInterval(cyber21Timers[data.roomId]);
+          delete cyber21Timers[data.roomId];
+        }
+        if (cyberBombTimers[data.roomId]) {
+          clearInterval(cyberBombTimers[data.roomId]);
+          delete cyberBombTimers[data.roomId];
+        }
+        delete cyber21Decks[data.roomId];
+
         room.phase = 'lobby';
+        room.currentRound = 0;
         room.players.forEach(p => {
             p.isReady = false;
-            p.score = 0; // Reset scores for next game
-            p.chips = room.settings.startingChips || 10000;
+            p.score = 0;
+            p.chips = p.chips || room.settings.startingChips || 10000;
             p.currentBet = 0;
             p.hand = [];
             p.handValue = 0;
             p.status21 = 'waiting';
             p.roundResult = null;
             p.payout = 0;
+            p.isEliminated = false;
+            p.lives = 3;
             p.jokers = { pass: room.settings.passJokers, changeQuestion: room.settings.changeJokers };
         });
         room.cyber21Dealer = undefined;
         room.cyber21TurnPlayerId = null;
         room.cyber21Logs = [];
+        room.bombLogs = [];
+        room.bombHolderId = null;
+        room.bombTimeLeft = undefined;
+        room.bombStatus = undefined;
+        room.lexisSubmissions = undefined;
+        room.lexisGuesses = undefined;
+        room.lexisAssignments = undefined;
+        room.lexisCorrectGuesserIds = undefined;
         room.readyForNextRound = [];
         room.answerText = null;
         room.dareResult = null;
         emitRoomUpdate(data.roomId);
-        addSystemMessage(data.roomId, 'Lobiye dönüldü, yeni oyun için bekleniyor.');
+        addSystemMessage(data.roomId, `${player.name} odayı lobiye döndürdü. Yeni oyun için bekleniyor.`);
+    }
+  });
+
+  socket.on('leave_room', (data: { roomId: string }, callback?: (res: { success: boolean }) => void) => {
+    const roomId = data?.roomId;
+    if (roomId && rooms[roomId]) {
+      const room = rooms[roomId];
+      const playerIndex = room.players.findIndex(p => p.id === socket.id);
+      if (playerIndex !== -1) {
+        const player = room.players[playerIndex];
+        room.players.splice(playerIndex, 1);
+        socket.leave(roomId);
+
+        if (room.players.length === 0) {
+          if (cyber21Timers[roomId]) {
+            clearInterval(cyber21Timers[roomId]);
+            delete cyber21Timers[roomId];
+          }
+          if (cyberBombTimers[roomId]) {
+            clearInterval(cyberBombTimers[roomId]);
+            delete cyberBombTimers[roomId];
+          }
+          delete cyber21Decks[roomId];
+          delete rooms[roomId];
+        } else {
+          if (player.isHost) {
+            room.players[0].isHost = true;
+            addSystemMessage(roomId, `${player.name} ayrıldı. Yeni oda yöneticisi: ${room.players[0].name}`);
+          } else {
+            addSystemMessage(roomId, `${player.name} odadan ayrıldı.`);
+          }
+
+          if (room.phase === 'cyber21_player_turns' && room.cyber21TurnPlayerId === socket.id) {
+            advanceCyber21Turn(roomId, room);
+          } else if (room.phase === 'cyberbomb_playing' && room.bombHolderId === socket.id) {
+            const alive = room.players.filter(p => !p.isEliminated);
+            if (alive.length > 0) {
+              room.bombHolderId = alive[0].id;
+              room.bombTimeLeft = 10;
+              addCyberBombLog(roomId, 'system', 'BOMBA AKTARILDI', `${player.name} ayrıldığı için bomba ${alive[0].name}'a geçti.`);
+              startCyberBombTimer(roomId, room);
+            }
+          } else {
+            emitRoomUpdate(roomId);
+          }
+        }
+      }
+    }
+    if (typeof callback === 'function') {
+      callback({ success: true });
     }
   });
 

@@ -35,6 +35,14 @@ export default function App() {
     };
   }, []);
 
+  const handleLeaveRoom = () => {
+    if (roomId) {
+      socket.emit('leave_room', { roomId });
+    }
+    setRoomId(null);
+    setRoomData(null);
+  };
+
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-0 bg-[#060813]" style={{
@@ -58,7 +66,11 @@ export default function App() {
             }} 
           />
         ) : (
-          <RoomView room={roomData} myPlayerInfo={playerInfo} />
+          <RoomView 
+            room={roomData} 
+            myPlayerInfo={playerInfo || { name: 'Oyuncu', avatar: '🎮' }} 
+            onLeaveRoom={handleLeaveRoom} 
+          />
         )}
       </div>
     </>
