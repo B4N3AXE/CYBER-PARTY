@@ -5,11 +5,15 @@ import { MessageCircle } from 'lucide-react';
 
 export default function ChatPanel({ chat, roomId }: { chat: ChatMessage[], roomId: string }) {
   const [text, setText] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chat]);
+  // Auto-scroll removed to prioritize user control as requested.
+  // useEffect(() => {
+  //   if (containerRef.current) {
+  //       containerRef.current.scrollTop = containerRef.current.scrollHeight;
+  //   }
+  // }, [chat]);
 
   const send = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +32,7 @@ export default function ChatPanel({ chat, roomId }: { chat: ChatMessage[], roomI
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 py-3 pr-1 text-xs custom-scrollbar">
+      <div ref={containerRef} className="flex-1 overflow-y-auto space-y-3 py-3 pr-1 text-xs custom-scrollbar">
         {chat.map(msg => {
           if (msg.isSystem) {
             return (

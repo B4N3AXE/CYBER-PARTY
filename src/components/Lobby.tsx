@@ -8,11 +8,14 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
   const selectedGame = room.settings?.gameMode || 'truth';
   const [isMuted, setIsMuted] = useState(false);
   const [chatText, setChatText] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [room.chat]);
+  // Auto-scroll removed to prioritize user control as requested.
+  // useEffect(() => {
+  //   if (chatContainerRef.current) {
+  //       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+  //   }
+  // }, [room.chat]);
 
   const handleStart = () => {
     socket.emit('start_game', { roomId: room.id });
@@ -447,7 +450,7 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
               <span className="text-xs text-slate-400">Canlı Mesajlaşma</span>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto pr-1 my-2 text-sm custom-scrollbar">
+            <div ref={chatContainerRef} className="flex-1 space-y-3 overflow-y-auto pr-1 my-2 text-sm custom-scrollbar">
               {room.chat.map(msg => (
                 <div key={msg.id} className="bg-white/5 rounded-2xl p-2.5 border border-white/5 flex items-start gap-2">
                   <span className="text-lg leading-none">{msg.senderAvatar}</span>
@@ -460,7 +463,6 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
                   </div>
                 </div>
               ))}
-              <div ref={chatEndRef} />
             </div>
 
             <form onSubmit={handleChat} className="pt-3 border-t border-white/10 flex gap-2">

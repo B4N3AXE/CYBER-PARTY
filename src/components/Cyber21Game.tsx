@@ -15,8 +15,8 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
   const [selectedBet, setSelectedBet] = useState<number>(500);
   const [chatMessage, setChatMessage] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState<'all' | 'chat' | 'logs'>('all');
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-  const logsBottomRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
 
   const isHost = myPlayer?.isHost;
   const myChips = myPlayer?.chips ?? 10000;
@@ -26,14 +26,18 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
   const isRoundEnd = room.phase === 'cyber21_round_end';
   const isGameOver = room.phase === 'game_over';
 
-  // Auto-scroll chat & logs
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [room.chat]);
-
-  useEffect(() => {
-    logsBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [room.cyber21Logs]);
+  // Auto-scroll removed to prioritize user control as requested.
+  // useEffect(() => {
+  //   if (chatContainerRef.current) {
+  //       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+  //   }
+  // }, [room.chat]);
+  //
+  // useEffect(() => {
+  //   if (logsContainerRef.current) {
+  //       logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+  //   }
+  // }, [room.cyber21Logs]);
 
   // Adjust selected bet if balance drops
   useEffect(() => {
@@ -702,7 +706,7 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
                   Masa hamleleri burada anlık görüntülenecek.
                 </div>
               )}
-              <div ref={logsBottomRef} />
+              <div ref={logsContainerRef} />
             </div>
           </div>
         )}
@@ -730,7 +734,7 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar min-h-0 text-sm">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar min-h-0 text-sm">
               {room.chat.map(msg => (
                 <div
                   key={msg.id}
@@ -756,7 +760,6 @@ export default function Cyber21Game({ room, myPlayer, socket }: Cyber21GameProps
                   </div>
                 </div>
               ))}
-              <div ref={chatBottomRef} />
             </div>
 
             {/* Chat Input & Submit Button */}

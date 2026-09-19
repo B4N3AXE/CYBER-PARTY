@@ -64,12 +64,12 @@ export default function CyberBombGame({ room, myPlayer, socket }: CyberBombGameP
     };
   }, [socket]);
 
-  // Auto-scroll log feed to top on new entry (since logs are unshifted)
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = 0;
-    }
-  }, [room.bombLogs]);
+  // Auto-scroll log feed to top on new entry (since logs are unshifted) removed to prioritize user control as requested.
+  // useEffect(() => {
+  //   if (logContainerRef.current) {
+  //     logContainerRef.current.scrollTop = 0;
+  //   }
+  // }, [room.bombLogs]);
 
   // Handle word submit
   const handleSubmitWord = (e?: React.FormEvent) => {
