@@ -7,7 +7,6 @@ import {
   Heart, 
   Skull, 
   Send, 
-  Sparkles, 
   AlertTriangle, 
   ArrowRight, 
   Trophy, 
@@ -101,13 +100,6 @@ export default function CyberBombGame({ room, myPlayer, socket, onRequestExit }:
 
     setWordInput('');
     setErrorMessage(null);
-  };
-
-  // Quick hint click
-  const handleSelectHint = (hintWord: string) => {
-    if (!isMyTurn || isExploded) return;
-    setWordInput(hintWord);
-    inputRef.current?.focus();
   };
 
   // Quick reaction
@@ -535,9 +527,13 @@ export default function CyberBombGame({ room, myPlayer, socket, onRequestExit }:
                   onChange={e => setWordInput(e.target.value)}
                   placeholder={
                     isMyTurn
-                      ? `${requiredLetter} ile başlayan kelime yaz... (Örn: ${room.bombHints?.[0] || 'Kuantum'})`
+                      ? `'${requiredLetter}' ile başlayan kelimeni yaz ve fırlat...`
                       : 'Bomba sana geldiğinde kelimeyi yazacaksın...'
                   }
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   className={`w-full pl-8 pr-4 py-3.5 rounded-xl border text-sm sm:text-base font-semibold transition-all outline-none shadow-inner ${
                     isMyTurn && !isExploded
                       ? 'bg-[#080d1e] text-white border-pink-500 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/40'
@@ -560,28 +556,6 @@ export default function CyberBombGame({ room, myPlayer, socket, onRequestExit }:
                 <span className="text-lg">🚀</span>
               </button>
             </form>
-
-            {/* Quick Hints Section */}
-            <div className="w-full max-w-xl mt-3 flex items-center gap-2 flex-wrap justify-center">
-              <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-yellow-400" /> HIZLI İPUCU:
-              </span>
-              {(room.bombHints || ['Kriptoloji', 'Kapsül', 'Karakter', 'Klavye']).map(hint => (
-                <button
-                  key={hint}
-                  type="button"
-                  disabled={!isMyTurn || isExploded}
-                  onClick={() => handleSelectHint(hint)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-all ${
-                    isMyTurn && !isExploded
-                      ? 'bg-white/5 hover:bg-pink-500/20 text-slate-300 hover:text-pink-300 border-white/10 hover:border-pink-500/40 cursor-pointer active:scale-95'
-                      : 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed'
-                  }`}
-                >
-                  {hint}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 

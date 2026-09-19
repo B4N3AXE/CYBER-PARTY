@@ -415,11 +415,6 @@ function getLastLetter(str: string): string {
   return upper.slice(-1) || 'K';
 }
 
-function getHintsForLetter(letter: string): string[] {
-  const list = TURKISH_BOMB_WORDS[letter] || ['Kuantum', 'Kristal', 'Kapsül', 'Klavye'];
-  return list.slice(0, 4);
-}
-
 const STARTER_WORDS_POOL: string[] = [
   'ROBOT', 'SİBER', 'DİJİTAL', 'KUANTUM', 'ALGORİTMA', 'TEKNOLOJİ',
   'FREKANS', 'LAZER', 'RADAR', 'BATARYA', 'İŞLEMCİ', 'MANYETİK',
@@ -550,7 +545,7 @@ function handleCyberBombExplosion(roomId: string, room: Room) {
     const newWord = getRandomBombStarterWord();
     r.bombLastWord = newWord;
     r.bombRequiredLetter = getLastLetter(newWord);
-    r.bombHints = getHintsForLetter(r.bombRequiredLetter);
+    r.bombHints = [];
     if (!r.bombUsedWords) r.bombUsedWords = [];
     if (!r.bombUsedWords.includes(newWord)) r.bombUsedWords.push(newWord);
     r.bombPassStreak = 0;
@@ -592,7 +587,7 @@ function startCyberBombGame(roomId: string, room: Room) {
   const starterWord = getRandomBombStarterWord();
   room.bombLastWord = starterWord;
   room.bombRequiredLetter = getLastLetter(starterWord);
-  room.bombHints = getHintsForLetter(room.bombRequiredLetter);
+  room.bombHints = [];
   room.bombUsedWords = [starterWord];
   room.bombHolderId = room.players[0]?.id || null;
   room.bombTimeLeft = 10;
@@ -1352,7 +1347,7 @@ io.on('connection', (socket: Socket) => {
     const nextLetter = getLastLetter(upperWord);
     room.bombLastWord = upperWord;
     room.bombRequiredLetter = nextLetter;
-    room.bombHints = getHintsForLetter(nextLetter);
+    room.bombHints = [];
 
     const alivePlayers = room.players.filter(p => !p.isEliminated);
     if (alivePlayers.length === 0) return;
