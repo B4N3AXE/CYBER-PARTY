@@ -42,7 +42,7 @@ export default function Lobby({ room, myPlayer }: { room: Room, myPlayer?: Playe
   const canStart = isHost && room.players.length >= 1 && room.players.filter(p => !p.isHost).every(p => p.isReady);
 
   return (
-    <div className="flex-1 w-full h-screen overflow-hidden relative flex flex-col justify-between select-none">
+    <div className="flex-1 w-full min-h-screen relative flex flex-col justify-between select-none overflow-x-hidden">
       {/* Colorful Ambient Glows */}
       <div className="fixed top-0 left-1/4 w-[600px] h-[500px] bg-[radial-gradient(circle,rgba(6,182,212,0.18)_0%,rgba(59,130,246,0.08)_50%,transparent_70%)] pointer-events-none -z-10 rounded-full blur-3xl"></div>
       <div className="fixed bottom-0 right-1/4 w-[650px] h-[550px] bg-[radial-gradient(circle,rgba(236,72,153,0.18)_0%,rgba(147,51,234,0.08)_50%,transparent_70%)] pointer-events-none -z-10 rounded-full blur-3xl"></div>

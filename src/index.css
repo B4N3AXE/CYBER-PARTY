@@ -42,12 +42,27 @@
 }
 
 
-html, body, #root {
-  height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
-  overscroll-behavior: none;
-  overflow-anchor: none;
+html {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 @layer utilities {

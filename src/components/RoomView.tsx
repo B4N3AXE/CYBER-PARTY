@@ -18,7 +18,7 @@ export default function RoomView({ room, myPlayerInfo }: { room: Room, myPlayerI
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full overflow-hidden">
+    <div className="flex flex-col min-h-screen w-full overflow-x-hidden">
       {/* Top Navigation Bar */}
       <header className="w-full border-b border-white/10 bg-[#0c121e]/80 backdrop-blur-xl sticky top-0 z-40 px-4 sm:px-6 py-3.5 transition-all">
         <div className="w-full flex items-center justify-between">
