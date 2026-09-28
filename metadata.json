@@ -1,6 +1,6 @@
 {
   "name": "CyberParty",
-  "description": "Siberpunk temalı, çok oyunculu Cyber-Bomb (Kelime Bombası Arenası), Cyber-21 (Blackjack Turnuvası), CyberLexis ve Truth & Dare parti oyunları platformu.",
+  "description": "Siberpunk temalı, çok oyunculu 101 Okey, Klasik Okey, Cyber-Bomb (Kelime Bombası), Cyber-21 (Blackjack), CyberLexis ve Truth & Dare parti oyunları platformu.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

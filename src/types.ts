@@ -1,3 +1,6 @@
+import { OkeyGameState, OkeyGameVariant } from './types/okey.js';
+export * from './types/okey.js';
+
 export type CardSuit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 
 export interface Card {
@@ -61,6 +64,10 @@ export interface Player {
   maxLives?: number;
   isEliminated?: boolean;
   rp?: number;
+  // Okey fields
+  okeyTileCount?: number;
+  okeyHandPoints?: number;
+  okeyScore?: number;
 }
 
 export type GamePhase =
@@ -84,7 +91,9 @@ export type GamePhase =
   | 'cyber21_dealer_turn'
   | 'cyber21_round_end'
   | 'cyberbomb_playing'
-  | 'cyberbomb_round_end';
+  | 'cyberbomb_round_end'
+  | 'okey_playing'
+  | 'okey_round_end';
 
 export interface ChatMessage {
   id: string;
@@ -103,8 +112,12 @@ export interface RoomSettings {
   maxPlayers?: number;
   timeLimit?: number;
   sfx?: boolean;
-  gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb';
+  gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb' | 'okey101' | 'okeyClassic';
   startingChips?: number;
+  // Okey specific settings
+  okeyVariant?: OkeyGameVariant;
+  okeyIndicatorBonus?: boolean;
+  okeyPenaltyMultiplier?: number;
 }
 
 export interface Room {
@@ -146,4 +159,6 @@ export interface Room {
   bombLogs?: CyberBombLog[];
   bombStatus?: 'ticking' | 'exploded' | 'transferred';
   bombHints?: string[];
+  // Okey Game State
+  okeyState?: OkeyGameState;
 }

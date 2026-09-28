@@ -5,6 +5,7 @@ import { Server, Socket } from 'socket.io';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { Room, Player, GamePhase, RoomSettings, ChatMessage, Card, CardSuit, Cyber21Dealer, Cyber21Log, Player21Status, CyberBombLog } from './src/types.js';
+import { initOkeyGame, emitOkeyUpdate, sortTilesBySeries, sortTilesByPairs, validateHandFinish } from './server/games/okey/okeyEngine';
 
 const app = express();
 app.use(compression());
@@ -12,7 +13,7 @@ const server = createServer(app);
 const io = new Server(server, {
   maxHttpBufferSize: 1e7 // Allow up to 10MB for image uploads
 });
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // In-memory state
 const rooms: Record<string, Room> = {};
@@ -342,8 +343,13 @@ function endCyber21Round(roomId: string, room: Room) {
 }
 
   function emitRoomUpdate(roomId: string) {
-    if (rooms[roomId]) {
-      io.to(roomId).emit('room_update', rooms[roomId]);
+    const r = rooms[roomId];
+    if (r) {
+      if ((r.settings.gameMode === 'okey101' || r.settings.gameMode === 'okeyClassic') && r.okeyState) {
+        emitOkeyUpdate(roomId, r, io);
+        return;
+      }
+      io.to(roomId).emit('room_update', r);
     }
   }
 
@@ -607,7 +613,7 @@ function startCyberBombGame(roomId: string, room: Room) {
 io.on('connection', (socket: Socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on('create_room', (data: { name: string; avatar: string; gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb' }, callback) => {
+  socket.on('create_room', (data: { name: string; avatar: string; gameMode?: 'truth' | 'lexis' | 'cyber21' | 'cyberbomb' | 'okey101' | 'okeyClassic' }, callback) => {
     const trimmedName = (data.name || '').trim().slice(0, 15);
     if (!trimmedName || trimmedName.length < 2) {
       return callback({ success: false, message: 'Lütfen en az 2 karakterden oluşan geçerli bir oyuncu adı girin!' });
@@ -624,11 +630,23 @@ io.on('connection', (socket: Socket) => {
       jokers: { pass: 1, changeQuestion: 1 }
     };
 
-    const initialMode = data.gameMode || 'cyberbomb';
+    const initialMode = data.gameMode || 'okey101';
 
     rooms[roomId] = {
       id: roomId,
-      settings: { rounds: 10, passJokers: 1, changeJokers: 1, isPrivate: false, maxPlayers: 8, timeLimit: 60, sfx: true, gameMode: initialMode },
+      settings: { 
+        rounds: 10, 
+        passJokers: 1, 
+        changeJokers: 1, 
+        isPrivate: false, 
+        maxPlayers: 4, 
+        timeLimit: 60, 
+        sfx: true, 
+        gameMode: initialMode,
+        okeyVariant: initialMode === 'okeyClassic' ? 'classic' : '101',
+        okeyIndicatorBonus: true,
+        okeyPenaltyMultiplier: 1
+      },
       players: [player],
       phase: 'lobby',
       currentRound: 0,
@@ -726,6 +744,11 @@ io.on('connection', (socket: Socket) => {
     if (!room) return;
     const player = room.players.find(p => p.id === socket.id);
     if (player?.isHost && room.phase === 'lobby') {
+      if (data.settings.gameMode === 'okeyClassic') {
+        data.settings.okeyVariant = 'classic';
+      } else if (data.settings.gameMode === 'okey101') {
+        data.settings.okeyVariant = '101';
+      }
       room.settings = data.settings;
       room.players.forEach(p => {
         p.jokers = { pass: room.settings.passJokers, changeQuestion: room.settings.changeJokers };
@@ -760,6 +783,12 @@ io.on('connection', (socket: Socket) => {
         room.lexisCorrectGuesserIds = [];
       }
       room.currentRound = 0;
+      if (room.settings.gameMode === 'okey101' || room.settings.gameMode === 'okeyClassic') {
+        const variant = room.settings.gameMode === 'okeyClassic' ? 'classic' : '101';
+        initOkeyGame(room, io, variant);
+        addSystemMessage(data.roomId, `🀄 ${variant === '101' ? '101 Okey' : 'Klasik Okey'} oyunu başlatıldı! Bol şanslar.`);
+        return;
+      }
       if (room.settings.gameMode === 'cyberbomb') {
         startCyberBombGame(data.roomId, room);
         return;
@@ -1031,6 +1060,7 @@ io.on('connection', (socket: Socket) => {
         room.readyForNextRound = [];
         room.answerText = null;
         room.dareResult = null;
+        room.okeyState = undefined;
         emitRoomUpdate(data.roomId);
         addSystemMessage(data.roomId, `${player.name} odayı lobiye döndürdü. Yeni oyun için bekleniyor.`);
     }
@@ -1405,6 +1435,247 @@ io.on('connection', (socket: Socket) => {
     startCyberBombGame(data.roomId, room);
   });
 
+  socket.on('okey_draw_deck', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand || hand.tiles.length >= 15) return;
+    
+    // Draw real tile from remaining deck
+    let drawnTile: any;
+    if (room.okeyState.remainingDeck && room.okeyState.remainingDeck.length > 0) {
+      drawnTile = room.okeyState.remainingDeck.shift()!;
+    } else {
+      drawnTile = {
+        id: `draw-${Date.now()}`,
+        color: (['red', 'black', 'blue', 'yellow'] as const)[Math.floor(Math.random() * 4)],
+        number: Math.floor(Math.random() * 13) + 1,
+      };
+    }
+
+    hand.tiles.push(drawnTile);
+    hand.remainingTileCount = hand.tiles.length;
+    room.okeyState.centerDeckRemaining = room.okeyState.remainingDeck ? room.okeyState.remainingDeck.length : Math.max(0, room.okeyState.centerDeckRemaining - 1);
+    emitOkeyUpdate(data.roomId, room, io);
+  });
+
+  socket.on('okey_draw_left', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand || hand.tiles.length >= 15) return;
+
+    // Draw from left player's discard pile
+    const myIdx = room.players.findIndex(p => p.id === socket.id);
+    const leftIdx = (myIdx - 1 + room.players.length) % room.players.length;
+    const leftPlayerId = room.players[leftIdx]?.id;
+    const leftPile = leftPlayerId ? room.okeyState.discardPiles[leftPlayerId] : undefined;
+
+    let drawnTile: any;
+    if (leftPile && leftPile.length > 0) {
+      drawnTile = leftPile.pop();
+    } else {
+      drawnTile = {
+        id: `draw-left-${Date.now()}`,
+        color: 'blue' as const,
+        number: 4,
+      };
+    }
+
+    hand.tiles.push(drawnTile);
+    hand.remainingTileCount = hand.tiles.length;
+    emitOkeyUpdate(data.roomId, room, io);
+  });
+
+  socket.on('okey_swap_tiles', (data: { roomId: string; fromIndex: number; toIndex: number }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand || !hand.tiles) return;
+
+    if (
+      data.fromIndex >= 0 &&
+      data.fromIndex < hand.tiles.length &&
+      data.toIndex >= 0 &&
+      data.toIndex < hand.tiles.length
+    ) {
+      const [moved] = hand.tiles.splice(data.fromIndex, 1);
+      hand.tiles.splice(data.toIndex, 0, moved);
+      emitOkeyUpdate(data.roomId, room, io);
+    }
+  });
+
+  socket.on('okey_reorder_tiles', (data: { roomId: string; tileIds: string[] }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand || !hand.tiles || !Array.isArray(data.tileIds)) return;
+
+    const tileMap = new Map(hand.tiles.map(t => [t.id, t]));
+    const reordered: any[] = [];
+    data.tileIds.forEach(id => {
+      const tile = tileMap.get(id);
+      if (tile) reordered.push(tile);
+    });
+    hand.tiles.forEach(t => {
+      if (!reordered.find(r => r.id === t.id)) reordered.push(t);
+    });
+    hand.tiles = reordered;
+    emitOkeyUpdate(data.roomId, room, io);
+  });
+
+  socket.on('okey_discard_tile', (data: { roomId: string; tileId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand) return;
+
+    const tileIdx = hand.tiles.findIndex(t => t.id === data.tileId);
+    if (tileIdx !== -1) {
+      const [discarded] = hand.tiles.splice(tileIdx, 1);
+      hand.lastDiscardedTile = discarded;
+      hand.remainingTileCount = hand.tiles.length;
+      if (!room.okeyState.discardPiles[socket.id]) {
+        room.okeyState.discardPiles[socket.id] = [];
+      }
+      room.okeyState.discardPiles[socket.id].push(discarded);
+
+      // Pass turn to next player
+      const pIdx = room.players.findIndex(p => p.id === socket.id);
+      const nextPIdx = (pIdx + 1) % room.players.length;
+      room.okeyState.turnPlayerId = room.players[nextPIdx]?.id || socket.id;
+
+      emitOkeyUpdate(data.roomId, room, io);
+    }
+  });
+
+  socket.on('okey_sort_hand', (data: { roomId: string; type: 'series' | 'pairs' }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand) return;
+
+    if (data.type === 'pairs') {
+      hand.tiles = sortTilesByPairs(hand.tiles);
+    } else {
+      hand.tiles = sortTilesBySeries(hand.tiles, room.okeyState.okeyTile);
+    }
+    emitOkeyUpdate(data.roomId, room, io);
+  });
+
+  socket.on('okey_finish_hand', (data: { roomId: string; isOkeyFinish?: boolean; discardTileId?: string }) => {
+    const room = rooms[data.roomId];
+    if (!room || !room.okeyState) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+    const hand = room.okeyState.playerHands[socket.id];
+    if (!hand || !hand.tiles) return;
+
+    let discardedTile: any = null;
+    if (data.discardTileId) {
+      discardedTile = hand.tiles.find((t: any) => t.id === data.discardTileId);
+    } else if (hand.tiles.length === 15) {
+      socket.emit('okey_action_error', {
+        message: '15 taşınız var! Masayı bitirmek için ıstakadaki 15. taşı seçip bitiş taşı olarak belirlemelisiniz.',
+      });
+      return;
+    } else {
+      discardedTile = hand.lastDiscardedTile || null;
+    }
+
+    const is101 = room.okeyState.variant === '101';
+    const validation = validateHandFinish(
+      hand.tiles,
+      discardedTile,
+      room.okeyState.okeyTile,
+      is101,
+      !!data.isOkeyFinish
+    );
+
+    if (!validation.valid) {
+      // Apply penalty points to offending player and cancel finish
+      const penaltyAmount = validation.penaltyPoints || (is101 ? 101 : -100);
+      player.score = Math.max(0, (player.score || 0) - Math.abs(penaltyAmount));
+
+      room.okeyState.penaltyList.unshift({
+        id: `fake-finish-${Date.now()}`,
+        playerName: player.name,
+        playerId: player.id,
+        reason: `${data.isOkeyFinish ? 'Sahte Okey Bitişi' : 'Hatalı Bitiş Girişimi'} (${validation.reason})`,
+        points: is101 ? 101 : -100,
+        timestamp: Date.now(),
+      });
+
+      socket.emit('okey_action_error', {
+        message: validation.reason,
+        penalty: penaltyAmount,
+      });
+
+      addSystemMessage(data.roomId, `⚠️ ${player.name} kurallara uymayan bir bitiriş denedi! Ceza: ${is101 ? '+101 Ceza Puanı' : '-100 Puan'}`);
+      emitOkeyUpdate(data.roomId, room, io);
+      return;
+    }
+
+    // Valid Finish
+    const bonus = validation.bonusPoints;
+    player.score = (player.score || 0) + bonus;
+
+    if (discardedTile && hand.tiles.some((t: any) => t.id === discardedTile.id)) {
+      const idx = hand.tiles.findIndex((t: any) => t.id === discardedTile.id);
+      if (idx !== -1) hand.tiles.splice(idx, 1);
+      if (!room.okeyState.discardPiles[socket.id]) room.okeyState.discardPiles[socket.id] = [];
+      room.okeyState.discardPiles[socket.id].push(discardedTile);
+    }
+
+    room.okeyState.winnerPlayerId = player.id;
+    room.okeyState.winnerReason = data.isOkeyFinish
+      ? '🌟 OKEY ATARAK EFSANEVİ BİTİRİŞ'
+      : '🏆 ELİ BAŞARIYLA TAMAMLAYIP BİTİRİŞ';
+    room.okeyState.status = 'round_end';
+
+    room.okeyState.penaltyList.unshift({
+      id: `finish-${Date.now()}`,
+      playerName: player.name,
+      playerId: player.id,
+      reason: data.isOkeyFinish ? 'Okey Atarak Masayı Bitirdi! (Rakiplere 2x Katlama)' : 'Eli Kurallara Uygun Bitirdi',
+      points: data.isOkeyFinish ? (is101 ? -202 : 400) : (is101 ? -101 : 200),
+      timestamp: Date.now(),
+    });
+
+    // In 101 Okey: all other players receive penalty
+    if (is101) {
+      room.players.forEach(other => {
+        if (other.id !== player.id) {
+          const otherHand = room.okeyState!.playerHands[other.id];
+          const tileSum = otherHand ? otherHand.tiles.reduce((s: number, t: any) => s + (t.number || 0), 0) : 0;
+          const penalty = (data.isOkeyFinish ? 2 : 1) * (otherHand?.hasOpened ? tileSum : 101);
+          other.score = Math.max(0, (other.score || 0) - penalty);
+          room.okeyState!.penaltyList.unshift({
+            id: `pen-101-${other.id}-${Date.now()}`,
+            playerName: other.name,
+            playerId: other.id,
+            reason: `Bitiş Sonrası Ceza (${otherHand?.hasOpened ? `${tileSum} Puan` : 'El Açamadı'})`,
+            points: penalty,
+            timestamp: Date.now(),
+          });
+        }
+      });
+    }
+
+    addSystemMessage(data.roomId, `🏆 ${player.name} eli ${data.isOkeyFinish ? 'OKEY ATARAK' : 'tamamlayarak'} BİTİRDİ! (+${bonus} Puan)`);
+    emitOkeyUpdate(data.roomId, room, io);
+  });
+
+  socket.on('okey_return_to_lobby', (data: { roomId: string }) => {
+    const room = rooms[data.roomId];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player?.isHost) return;
+    room.phase = 'lobby';
+    room.okeyState = undefined;
+    emitRoomUpdate(data.roomId);
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     // Clean up rooms
@@ -1514,8 +1785,8 @@ async function startServer() {
     });
   }
 
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  server.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
   });
 }
 

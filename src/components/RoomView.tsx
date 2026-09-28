@@ -5,6 +5,7 @@ import GameBoard from './GameBoard';
 import LexisGame from './LexisGame';
 import Cyber21Game from './Cyber21Game';
 import CyberBombGame from './CyberBombGame';
+import { OkeyGame } from './games/okey/OkeyGame';
 import ChatPanel from './ChatPanel';
 import socket from '../socket';
 import { LogOut, AlertTriangle, X, Play, RotateCcw } from 'lucide-react';
@@ -59,7 +60,15 @@ export default function RoomView({
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white animate-pulse"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
               </div>
               <div>
-                {room.settings?.gameMode === 'cyberbomb' ? (
+                {room.settings?.gameMode === 'okey101' ? (
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400">
+                    101<span className="text-cyan-400">OKEY</span>
+                  </span>
+                ) : room.settings?.gameMode === 'okeyClassic' ? (
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-amber-400">
+                    KLASİK<span className="text-amber-400">OKEY</span>
+                  </span>
+                ) : room.settings?.gameMode === 'cyberbomb' ? (
                   <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-pink-400">
                     CYBER<span className="text-pink-500">BOMB</span>
                   </span>
@@ -144,7 +153,11 @@ export default function RoomView({
       </header>
 
       {/* Main Game Layout */}
-      {room.settings?.gameMode === 'cyberbomb' ? (
+      {room.settings?.gameMode === 'okey101' || room.settings?.gameMode === 'okeyClassic' ? (
+        <main className="w-full flex-1 min-h-0 p-1 sm:p-2 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+          <OkeyGame room={room} myPlayer={myPlayer} socket={socket} onRequestExit={() => setShowExitModal(true)} />
+        </main>
+      ) : room.settings?.gameMode === 'cyberbomb' ? (
         <main className="w-full flex-1 min-h-0 p-2 sm:p-3 lg:p-4 flex flex-col overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
           <CyberBombGame room={room} myPlayer={myPlayer} socket={socket} onRequestExit={() => setShowExitModal(true)} />
         </main>
